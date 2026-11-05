@@ -1,17 +1,23 @@
 import { Image } from "expo-image";
 import { useRouter } from "expo-router";
+import { useEffect } from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Spacing } from "@/constants/theme";
-
-const BRAND_BLUE = "#2855FF";
+import { useTheme } from "@/hooks/use-theme";
 
 export default function OnboardingPageOne() {
   const router = useRouter();
+  const theme = useTheme();
+
+  useEffect(() => {
+    const timer = setTimeout(() => router.replace("/page2"), 3000);
+    return () => clearTimeout(timer);
+  }, [router]);
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { backgroundColor: theme.brand }]}>
       <Image
         source={require("@/assets/images/Vouccom Illustrations 1.jpg")}
         style={StyleSheet.absoluteFill}
@@ -26,7 +32,7 @@ export default function OnboardingPageOne() {
             style={styles.logo}
             contentFit="contain"
           />
-          <Text style={styles.brand}>vouccom</Text>
+          <Text style={[styles.brand, { color: theme.onBrand }]}>vouccom</Text>
         </View>
       </SafeAreaView>
     </View>
@@ -36,7 +42,6 @@ export default function OnboardingPageOne() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: BRAND_BLUE,
   },
   content: {
     flex: 1,
@@ -55,7 +60,6 @@ const styles = StyleSheet.create({
     height: 35,
   },
   brand: {
-    color: "#FFFFFF",
     fontSize: 40,
     fontWeight: "700",
     letterSpacing: 0.5,
