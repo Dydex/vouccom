@@ -1,3 +1,4 @@
+import { Image } from "expo-image";
 import { SymbolView } from "expo-symbols";
 import {
   FlatList,
@@ -9,10 +10,9 @@ import {
 } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { FLOATING_TAB_BAR_HEIGHT } from "@/components/floating-tabs";
 import { ListingCard } from "@/components/listing-card";
 import { formatNaira } from "@/constants/currency";
-import { Spacing } from "@/constants/theme";
+import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
 import { BROWSE_LISTINGS, FEATURED_LISTINGS } from "@/data/listings";
 import { useTheme } from "@/hooks/use-theme";
 
@@ -32,7 +32,7 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingBottom:
-            FLOATING_TAB_BAR_HEIGHT +
+            FloatingTabBarHeight +
             Math.max(insets.bottom, 12) +
             Spacing.five,
         }}
@@ -63,14 +63,11 @@ export default function HomeScreen() {
                 { backgroundColor: theme.greyButton },
               ]}
             >
-              <SymbolView
-                name={{
-                  ios: "magnifyingglass",
-                  android: "search",
-                  web: "search",
-                }}
+              <Image
+                source={require("@/assets/images/Search.png")}
+                style={styles.searchIcon}
+                contentFit="contain"
                 tintColor={theme.search}
-                size={18}
               />
             </Pressable>
             <Pressable
@@ -196,6 +193,10 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",
+  },
+  searchIcon: {
+    width: 18,
+    height: 18,
   },
   balanceCard: {
     height: 56,

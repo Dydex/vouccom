@@ -117,3 +117,5 @@ export const Spacing = {
 
 export const BottomTabInset = Platform.select({ ios: 50, android: 80 }) ?? 0;
 export const MaxContentWidth = 800;
+/** Height of the floating bottom tab bar, so screens can leave room under their content. */
+export const FloatingTabBarHeight = 62;
