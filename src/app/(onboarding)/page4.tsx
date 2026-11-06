@@ -36,7 +36,7 @@ export default function OnboardingPageFour() {
 
       <Pressable
         accessibilityRole="button"
-        onPress={() => router.replace("/home")}
+        onPress={() => router.replace("/login")}
         style={({ pressed }) => [
           styles.button,
           { backgroundColor: theme.brand },
