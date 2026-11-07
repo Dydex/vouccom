@@ -1,4 +1,5 @@
 import { Image } from "expo-image";
+import { usePathname } from "expo-router";
 import {
   TabList,
   TabSlot,
@@ -21,6 +22,11 @@ const ICONS: Record<string, number> = {
   profile: require("@/assets/images/tabIcons/Person.png"),
 };
 
+/** Sub-screens that live under a tab and should keep that tab highlighted. */
+const CHILD_ROUTES: Record<string, string[]> = {
+  home: ["/entries", "/myDraws", "/myWins", "/activity"],
+};
+
 function TabButton({
   isFocused,
   name,
@@ -28,23 +34,30 @@ function TabButton({
   ...props
 }: TabTriggerSlotProps & { name: string; label: string }) {
   const theme = useTheme();
+  const pathname = usePathname();
+  const active = !!isFocused || !!CHILD_ROUTES[name]?.includes(pathname);
 
   return (
     <Pressable
       {...(props as unknown as PressableProps)}
       accessibilityRole="tab"
       accessibilityLabel={label}
-      accessibilityState={{ selected: !!isFocused }}
-      style={[styles.button, isFocused && { backgroundColor: theme.tabActive }]}
+      accessibilityState={{ selected: active }}
+      style={[styles.button, active && { backgroundColor: theme.tabActive }]}
     >
       <Image
         source={ICONS[name]}
         style={styles.icon}
         contentFit="contain"
-        tintColor={isFocused ? theme.brand : theme.text}
+        tintColor={active ? theme.brand : theme.text}
       />
     </Pressable>
   );
+}
+
+/** Registers a route with the tab navigator without rendering a button for it. */
+function HiddenTab(_props: TabTriggerSlotProps) {
+  return null;
 }
 
 function FloatingTabList(props: TabListProps) {
@@ -85,6 +98,18 @@ export default function TabsLayout() {
           </TabTrigger>
           <TabTrigger name="profile" href="/profile" asChild>
             <TabButton name="profile" label="Profile" />
+          </TabTrigger>
+          <TabTrigger name="entries" href="/entries" asChild>
+            <HiddenTab />
+          </TabTrigger>
+          <TabTrigger name="myDraws" href="/myDraws" asChild>
+            <HiddenTab />
+          </TabTrigger>
+          <TabTrigger name="myWins" href="/myWins" asChild>
+            <HiddenTab />
+          </TabTrigger>
+          <TabTrigger name="activity" href="/activity" asChild>
+            <HiddenTab />
           </TabTrigger>
         </FloatingTabList>
       </TabList>

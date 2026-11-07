@@ -14,7 +14,7 @@ export default function OnboardingPageFour() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={[styles.card, { backgroundColor: theme.coral }]}>
         <Image
-          source={require("@/assets/images/Die@4x 2.png")}
+          source={require("@/assets/images/onboarding/Die@4x 2.png")}
           style={styles.dice}
           contentFit="contain"
         />

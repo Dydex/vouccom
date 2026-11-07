@@ -14,7 +14,7 @@ export default function OnboardingPageThree() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={[styles.card, { backgroundColor: theme.accent }]}>
         <Image
-          source={require("@/assets/images/Voucher 2@4x 1.png")}
+          source={require("@/assets/images/onboarding/Voucher 2@4x 1.png")}
           style={styles.vouchers}
           contentFit="contain"
         />

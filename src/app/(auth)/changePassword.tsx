@@ -33,7 +33,7 @@ export default function ChangePassword() {
           style={[styles.backButton, { backgroundColor: theme.greyButton }]}
         >
           <Image
-            source={require("@/assets/images/Vector.png")}
+            source={require("@/assets/images/common/backarrow.png")}
             style={styles.backArrow}
             contentFit="contain"
             tintColor={theme.text}
@@ -97,7 +97,7 @@ const styles = StyleSheet.create({
   },
   backArrow: {
     width: 18,
-    height: 14, // native size of Vector.png
+    height: 14, // backarrow.png is a 4x export (72x56)
   },
   title: {
     fontSize: 26,

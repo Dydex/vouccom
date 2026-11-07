@@ -43,7 +43,7 @@ export default function PasswordReset() {
           style={[styles.backButton, { backgroundColor: theme.greyButton }]}
         >
           <Image
-            source={require("@/assets/images/Vector.png")}
+            source={require("@/assets/images/common/backarrow.png")}
             style={styles.backArrow}
             contentFit="contain"
             tintColor={theme.text}

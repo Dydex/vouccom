@@ -14,7 +14,7 @@ export default function OnboardingPageTwo() {
     <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
       <View style={[styles.card, { backgroundColor: theme.brand }]}>
         <Image
-          source={require("@/assets/images/Discover 4.png")}
+          source={require("@/assets/images/onboarding/Discover 4.png")}
           style={styles.lens}
           contentFit="contain"
         />

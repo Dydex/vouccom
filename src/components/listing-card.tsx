@@ -12,21 +12,31 @@ type ListingCardProps = {
   listing: Listing;
   /** Narrower card used in the "Browse Listings" row. */
   compact?: boolean;
+  /** Fill the available width (grid cells) instead of the fixed card width. */
+  fluid?: boolean;
   onBuy?: (listing: Listing) => void;
 };
 
-export function ListingCard({ listing, compact, onBuy }: ListingCardProps) {
+export function ListingCard({
+  listing,
+  compact,
+  fluid,
+  onBuy,
+}: ListingCardProps) {
   const theme = useTheme();
   const [saved, setSaved] = useState(false);
 
-  const badgeColor =
-    listing.badge === "new" ? theme.badgeNew : theme.badgeSoon;
+  const badgeColor = listing.badge === "new" ? theme.badgeNew : theme.badgeSoon;
 
   return (
     <View
       style={[
         styles.card,
-        { width: compact ? 169 : 260, backgroundColor: theme.greyButton },
+        {
+          width: fluid ? undefined : compact ? 169 : 260,
+          backgroundColor: theme.card,
+        },
+        fluid && styles.fluid,
       ]}
     >
       <View style={[styles.media, { backgroundColor: theme.cardMedia }]}>
@@ -43,18 +53,16 @@ export function ListingCard({ listing, compact, onBuy }: ListingCardProps) {
       </View>
 
       <View style={styles.body}>
-        <Text
-          style={[styles.title, { color: theme.text }]}
-          numberOfLines={1}
-        >
+        <Text style={[styles.title, { color: theme.text }]} numberOfLines={1}>
           {listing.title}
         </Text>
         <Text
           style={[styles.subtitle, { color: theme.textSecondary }]}
-          numberOfLines={1}
+          numberOfLines={compact ? 2 : 1}
         >
-          {formatNaira(listing.voucherPrice)} per voucher · Draw:{" "}
-          {listing.drawDate}
+          {formatNaira(listing.voucherPrice)} per voucher
+          {/* Only the narrow Browse card puts the draw date on its own line. */}
+          {compact ? "\n" : " · "}Draw: {listing.drawDate}
         </Text>
 
         <View style={styles.actions}>
@@ -69,7 +77,7 @@ export function ListingCard({ listing, compact, onBuy }: ListingCardProps) {
             ]}
           >
             <Text style={[styles.buyText, { color: theme.onBrand }]}>
-              Buy voucher
+              {compact ? "Buy" : "Buy voucher"}
             </Text>
           </Pressable>
 
@@ -100,6 +108,9 @@ const styles = StyleSheet.create({
   card: {
     borderRadius: 20,
     overflow: "hidden",
+  },
+  fluid: {
+    flex: 1,
   },
   media: {
     height: 134,
@@ -153,7 +164,7 @@ const styles = StyleSheet.create({
     width: 127,
   },
   buyCompact: {
-    flex: 1,
+    width: 68,
   },
   buyText: {
     fontSize: 13,
@@ -162,7 +173,7 @@ const styles = StyleSheet.create({
   save: {
     width: 38,
     height: 38,
-    borderRadius: 12,
+    borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",
   },

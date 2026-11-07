@@ -19,7 +19,7 @@ export default function OnboardingPageOne() {
   return (
     <View style={[styles.container, { backgroundColor: theme.brand }]}>
       <Image
-        source={require("@/assets/images/Vouccom Illustrations 1.jpg")}
+        source={require("@/assets/images/onboarding/Vouccom Illustrations 1.png")}
         style={StyleSheet.absoluteFill}
         contentFit="cover"
         contentPosition="bottom"
@@ -28,7 +28,7 @@ export default function OnboardingPageOne() {
       <SafeAreaView style={styles.content}>
         <View style={styles.brandRow}>
           <Image
-            source={require("@/assets/images/logo.png")}
+            source={require("@/assets/images/onboarding/logo.png")}
             style={styles.logo}
             contentFit="contain"
           />
