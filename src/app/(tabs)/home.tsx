@@ -19,12 +19,12 @@ import { formatNaira } from "@/constants/currency";
 import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
 import { ACTIVITY, DRAWS } from "@/data/draws";
 import { ENTRIES, WINS } from "@/data/entries";
+import { WALLET_BALANCE } from "@/data/wallet";
 import { BROWSE_LISTINGS, FEATURED_LISTINGS } from "@/data/listings";
 import { useTheme } from "@/hooks/use-theme";
 
-// TODO: read the signed-in user's name and wallet balance from the backend.
+// TODO: read the signed-in user's name from the backend.
 const USER_NAME = "Kola";
-const BALANCE = 125000;
 
 const SIDE = 20;
 
@@ -50,9 +50,7 @@ function SectionBar({
 
   return (
     <View style={[styles.browseBar, { backgroundColor: barColor }]}>
-      <Text
-        style={[styles.browseTitle, { color: titleColor ?? theme.text }]}
-      >
+      <Text style={[styles.browseTitle, { color: titleColor ?? theme.text }]}>
         {title}
       </Text>
       <Pressable
@@ -96,10 +94,7 @@ export default function HomeScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Search"
-            style={[
-              styles.roundButton,
-              { backgroundColor: theme.greyButton },
-            ]}
+            style={[styles.roundButton, { backgroundColor: theme.greyButton }]}
           >
             <Image
               source={require("@/assets/images/common/Search.png")}
@@ -111,10 +106,7 @@ export default function HomeScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Notifications"
-            style={[
-              styles.roundButton,
-              { backgroundColor: theme.greyButton },
-            ]}
+            style={[styles.roundButton, { backgroundColor: theme.greyButton }]}
           >
             <SymbolView
               name={{
@@ -123,6 +115,7 @@ export default function HomeScreen() {
                 web: "notifications",
               }}
               tintColor={theme.text}
+              weight="bold"
               size={18}
             />
           </Pressable>
@@ -134,16 +127,13 @@ export default function HomeScreen() {
               Available Balance
             </Text>
             <Text style={[styles.balanceAmount, { color: theme.onBrand }]}>
-              {formatNaira(BALANCE)}
+              {formatNaira(WALLET_BALANCE)}
             </Text>
           </View>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Add funds"
-            style={[
-              styles.addButton,
-              { backgroundColor: theme.balanceButton },
-            ]}
+            style={[styles.addButton, { backgroundColor: theme.balanceButton }]}
           >
             <SymbolView
               name={{ ios: "plus", android: "add", web: "add" }}
@@ -159,12 +149,9 @@ export default function HomeScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{
           paddingBottom:
-            FloatingTabBarHeight +
-            Math.max(insets.bottom, 12) +
-            Spacing.five,
+            FloatingTabBarHeight + Math.max(insets.bottom, 12) + Spacing.five,
         }}
       >
-
         {/* Featured */}
         <Text style={[styles.sectionTitle, { color: theme.text }]}>
           Featured
@@ -295,6 +282,7 @@ const styles = StyleSheet.create({
     flex: 1,
     marginLeft: Spacing.one,
     fontSize: 15,
+    fontWeight: "500",
   },
   roundButton: {
     width: 38,
@@ -357,6 +345,7 @@ const styles = StyleSheet.create({
   },
   browseTitle: {
     fontSize: 14,
+    fontWeight: "500",
   },
   rowList: {
     marginHorizontal: SIDE,
@@ -371,5 +360,6 @@ const styles = StyleSheet.create({
   },
   viewAllText: {
     fontSize: 13,
+    fontWeight: "500",
   },
 });

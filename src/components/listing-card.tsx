@@ -1,4 +1,5 @@
 import { Image } from "expo-image";
+import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useState } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
@@ -28,8 +29,14 @@ export function ListingCard({
 
   const badgeColor = listing.badge === "new" ? theme.badgeNew : theme.badgeSoon;
 
+  const openDetails = () =>
+    router.push({ pathname: "/listing/[id]", params: { id: listing.id } });
+
   return (
-    <View
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={`View ${listing.title}`}
+      onPress={openDetails}
       style={[
         styles.card,
         {
@@ -68,7 +75,7 @@ export function ListingCard({
         <View style={styles.actions}>
           <Pressable
             accessibilityRole="button"
-            onPress={() => onBuy?.(listing)}
+            onPress={() => (onBuy ? onBuy(listing) : openDetails())}
             style={({ pressed }) => [
               styles.buy,
               compact ? styles.buyCompact : styles.buyWide,
@@ -100,7 +107,7 @@ export function ListingCard({
           </Pressable>
         </View>
       </View>
-    </View>
+    </Pressable>
   );
 }
 
