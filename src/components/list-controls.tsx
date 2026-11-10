@@ -1,5 +1,4 @@
 import { Image } from "expo-image";
-import { SymbolView } from "expo-symbols";
 import type { ReactNode } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
 
@@ -88,11 +87,11 @@ export function FilterButton({ onPress }: { onPress?: () => void }) {
 
   return (
     <IconButton label="Filters" onPress={onPress}>
-      <SymbolView
-        name={{ ios: "slider.horizontal.3", android: "tune", web: "tune" }}
+      <Image
+        source={require("@/assets/images/common/Filter.png")}
+        style={styles.filterIcon}
+        contentFit="contain"
         tintColor={theme.text}
-        weight="bold"
-        size={18}
       />
     </IconButton>
   );
@@ -112,7 +111,6 @@ export function ListControls<S extends string>({
   allStatus,
   onStatusChange,
 }: ListControlsProps<S>) {
-
   return (
     <View style={styles.controls}>
       <SearchField
@@ -173,6 +171,10 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
+  },
+  filterIcon: {
+    width: 20,
+    height: 20, // Filter.png is a 4x export (80x80)
   },
   filterButton: {
     width: 38,
