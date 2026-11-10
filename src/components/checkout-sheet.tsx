@@ -4,6 +4,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 
 import { BottomSheet } from "@/components/bottom-sheet";
+import { CardLogo } from "@/components/card-logo";
 import { formatNaira } from "@/constants/currency";
 import { Spacing } from "@/constants/theme";
 import { SAVED_CARDS, WALLET_BALANCE } from "@/data/wallet";
@@ -182,14 +183,7 @@ export function CheckoutSheet({
             key={card.id}
             selected={method === card.id}
             onPress={() => setMethod(card.id)}
-            left={
-              <Image
-                source={require("@/assets/images/payments/visa.png")}
-                style={styles.visa}
-                contentFit="contain"
-                accessibilityLabel={card.brand}
-              />
-            }
+            left={<CardLogo brand={card.brand} />}
             label={`${card.brand} **** ${card.last4}`}
             right={
               <Pressable
@@ -400,10 +394,6 @@ const styles = StyleSheet.create({
   methodLabel: {
     flex: 1,
     fontSize: 15,
-  },
-  visa: {
-    width: 30, // visa.png is a 4x export (118x67)
-    height: 17,
   },
   walletIcon: {
     width: 20,

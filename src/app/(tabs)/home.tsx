@@ -15,6 +15,7 @@ import { ActivityRow } from "@/components/activity-row";
 import { DrawRow } from "@/components/draw-row";
 import { EntryRow } from "@/components/entry-row";
 import { ListingCard } from "@/components/listing-card";
+import { SectionBar } from "@/components/section-bar";
 import { formatNaira } from "@/constants/currency";
 import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
 import { ACTIVITY, DRAWS } from "@/data/draws";
@@ -29,43 +30,6 @@ const USER_NAME = "Kola";
 const SIDE = 20;
 
 const ACTIVE_ENTRIES = ENTRIES.filter((e) => e.status === "active").slice(0, 3);
-
-function SectionBar({
-  title,
-  barColor,
-  pillColor,
-  pillTextColor,
-  titleColor,
-  onViewAll,
-}: {
-  title: string;
-  barColor: string;
-  pillColor: string;
-  pillTextColor: string;
-  /** Defaults to the theme text colour. Set when the bar colour doesn't flip with the theme. */
-  titleColor?: string;
-  onViewAll?: () => void;
-}) {
-  const theme = useTheme();
-
-  return (
-    <View style={[styles.browseBar, { backgroundColor: barColor }]}>
-      <Text style={[styles.browseTitle, { color: titleColor ?? theme.text }]}>
-        {title}
-      </Text>
-      <Pressable
-        accessibilityRole="button"
-        accessibilityLabel={`View all: ${title}`}
-        onPress={onViewAll}
-        style={[styles.viewAll, { backgroundColor: pillColor }]}
-      >
-        <Text style={[styles.viewAllText, { color: pillTextColor }]}>
-          view all
-        </Text>
-      </Pressable>
-    </View>
-  );
-}
 
 export default function HomeScreen() {
   const theme = useTheme();
@@ -171,7 +135,7 @@ export default function HomeScreen() {
           barColor={theme.browseBar}
           pillColor={theme.viewAllPill}
           pillTextColor={theme.text}
-          onViewAll={() => router.push("/listings")}
+          onAction={() => router.push("/listings")}
         />
         <FlatList
           horizontal
@@ -188,7 +152,7 @@ export default function HomeScreen() {
           barColor={theme.entriesBar}
           pillColor={theme.entriesPill}
           pillTextColor={theme.text}
-          onViewAll={() => router.push("/entries")}
+          onAction={() => router.push("/entries")}
         />
         <View style={styles.rowList}>
           {ACTIVE_ENTRIES.map((entry) => (
@@ -202,7 +166,7 @@ export default function HomeScreen() {
           barColor={theme.drawsBar}
           pillColor={theme.drawsPill}
           pillTextColor={theme.text}
-          onViewAll={() => router.push("/myDraws")}
+          onAction={() => router.push("/myDraws")}
         />
         <View style={styles.rowList}>
           {DRAWS.map((draw) => (
@@ -217,7 +181,7 @@ export default function HomeScreen() {
           pillColor={theme.winsPill}
           pillTextColor={theme.onBadge}
           titleColor={theme.onBadge}
-          onViewAll={() => router.push("/myWins")}
+          onAction={() => router.push("/myWins")}
         />
         <View style={styles.rowList}>
           {WINS.slice(0, 1).map((win) => (
@@ -231,7 +195,7 @@ export default function HomeScreen() {
           barColor={theme.activityBar}
           pillColor={theme.activityPill}
           pillTextColor={theme.text}
-          onViewAll={() => router.push("/activity")}
+          onAction={() => router.push("/activity")}
         />
         <View style={styles.rowList}>
           {ACTIVITY.slice(0, 3).map((activity) => (
@@ -331,35 +295,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: SIDE,
     gap: Spacing.three,
   },
-  browseBar: {
-    marginTop: Spacing.four,
-    marginBottom: Spacing.three,
-    marginHorizontal: SIDE,
-    height: 56,
-    borderRadius: 20,
-    paddingLeft: Spacing.three,
-    paddingRight: Spacing.two,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-  },
-  browseTitle: {
-    fontSize: 14,
-    fontWeight: "500",
-  },
   rowList: {
     marginHorizontal: SIDE,
     gap: Spacing.two,
-  },
-  viewAll: {
-    height: 38,
-    paddingHorizontal: Spacing.four - Spacing.one,
-    borderRadius: 999,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  viewAllText: {
-    fontSize: 13,
-    fontWeight: "500",
   },
 });
