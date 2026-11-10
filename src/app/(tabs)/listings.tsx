@@ -36,7 +36,7 @@ const SORT_OPTIONS: FilterOption<Sort>[] = [
 ];
 
 const SORTERS: Record<Sort, ((a: Listing, b: Listing) => number) | null> = {
-  default: null, // keep the backend's order
+  default: null, 
   newest: (a, b) => a.listedDaysAgo - b.listedDaysAgo,
   closing: (a, b) => a.daysLeft - b.daysLeft,
   price: (a, b) => a.voucherPrice - b.voucherPrice,
@@ -59,7 +59,6 @@ export default function ListingsScreen() {
     );
     const sorter = SORTERS[sort];
     const sorted = sorter ? [...result].sort(sorter) : result;
-    // Pad an odd count so the last card keeps half width instead of stretching.
     return sorted.length % 2 ? [...sorted, null] : sorted;
   }, [query, sort, filters]);
 
@@ -76,7 +75,7 @@ export default function ListingsScreen() {
         imageHeight={95}
         imageRight={0}
         showBack={false}
-        // White text and status-bar icons on the blue band, in both themes.
+
         statusBarStyle="light"
         contentColor={theme.onBrand}
       />

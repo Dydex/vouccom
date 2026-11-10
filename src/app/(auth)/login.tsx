@@ -215,7 +215,7 @@ const styles = StyleSheet.create({
   },
   backArrow: {
     width: 18,
-    height: 14, // backarrow.png is a 4x export (72x56)
+    height: 14, 
   },
   title: {
     fontSize: 26,
