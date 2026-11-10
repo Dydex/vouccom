@@ -1,4 +1,3 @@
-import { Image } from "expo-image";
 import { SymbolView } from "expo-symbols";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
@@ -8,6 +7,7 @@ import { CardFormSheet } from "@/components/card-form-sheet";
 import { CardLogo } from "@/components/card-logo";
 import { PopoverMenu } from "@/components/popover-menu";
 import { SectionBar } from "@/components/section-bar";
+import { TransactionRow } from "@/components/transaction-row";
 import { TransactionSheet } from "@/components/transaction-sheet";
 import { formatNaira } from "@/constants/currency";
 import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
@@ -20,10 +20,6 @@ import {
 import { useTheme } from "@/hooks/use-theme";
 
 const SIDE = 20;
-
-function signedNaira(amount: number): string {
-  return `${amount >= 0 ? "+" : "-"}${formatNaira(Math.abs(amount))}`;
-}
 
 export default function WalletScreen() {
   const theme = useTheme();
@@ -218,69 +214,6 @@ export default function WalletScreen() {
   );
 }
 
-function TransactionRow({
-  tx,
-  onPress,
-}: {
-  tx: Transaction;
-  onPress: () => void;
-}) {
-  const theme = useTheme();
-  const incoming = tx.amount >= 0;
-
-  return (
-    <Pressable
-      accessibilityRole="button"
-      accessibilityLabel={`${tx.title}, ${signedNaira(tx.amount)}. View details`}
-      onPress={onPress}
-      style={({ pressed }) => [
-        styles.row,
-        { backgroundColor: theme.card },
-        pressed && styles.pressed,
-      ]}
-    >
-      <View
-        style={[
-          styles.logo,
-          { backgroundColor: incoming ? theme.moneyInBg : theme.moneyOutBg },
-        ]}
-      >
-        <Image
-          source={require("@/assets/images/common/backarrow.png")}
-          style={[
-            styles.arrow,
-            // The back arrow points left: turned a quarter either way it points up or down.
-            { transform: [{ rotate: incoming ? "90deg" : "-90deg" }] },
-          ]}
-          contentFit="contain"
-          tintColor={incoming ? theme.moneyIn : theme.moneyOut}
-        />
-      </View>
-
-      <View style={styles.rowText}>
-        <Text style={[styles.title, { color: theme.text }]}>{tx.title}</Text>
-        <Text style={[styles.meta, { color: theme.textSecondary }]}>
-          {tx.time}
-        </Text>
-      </View>
-
-      <View style={styles.amountColumn}>
-        <Text
-          style={[
-            styles.amount,
-            { color: incoming ? theme.moneyIn : theme.moneyOut },
-          ]}
-        >
-          {signedNaira(tx.amount)}
-        </Text>
-        <Text style={[styles.meta, { color: theme.textSecondary }]}>
-          view details
-        </Text>
-      </View>
-    </Pressable>
-  );
-}
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -334,13 +267,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
   },
-  pressed: {
-    opacity: 0.85,
-  },
-  arrow: {
-    width: 18,
-    height: 14, // backarrow.png is a 4x export (72x56)
-  },
   rowText: {
     flex: 1,
     gap: Spacing.half,
@@ -355,13 +281,5 @@ const styles = StyleSheet.create({
   },
   meta: {
     fontSize: 11,
-  },
-  amountColumn: {
-    alignItems: "flex-end",
-    gap: Spacing.half,
-  },
-  amount: {
-    fontSize: 14,
-    fontWeight: "500",
   },
 });

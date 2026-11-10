@@ -25,6 +25,14 @@ const ICONS: Record<string, number> = {
 /** Sub-screens that live under a tab and should keep that tab highlighted. */
 const CHILD_ROUTES: Record<string, string[]> = {
   home: ["/entries", "/myDraws", "/myWins", "/activity"],
+  profile: [
+    "/profileDetails",
+    "/identityVerification",
+    "/notifications",
+    "/appPreferences",
+    "/securityPrivacy",
+    "/helpCentre",
+  ],
 };
 
 function TabButton({
@@ -86,7 +94,9 @@ function FloatingTabList(props: TabListProps) {
 
 export default function TabsLayout() {
   return (
-    <Tabs>
+    // "Back" returns to the screen you came from. The default jumps to the first
+    // tab (Home), which is wrong for sub-screens such as Profile Details.
+    <Tabs options={{ backBehavior: "history" }}>
       <TabSlot style={{ flex: 1 }} />
       <TabList asChild>
         <FloatingTabList>
@@ -115,6 +125,28 @@ export default function TabsLayout() {
             <HiddenTab />
           </TabTrigger>
           <TabTrigger name="activity" href="/activity" asChild>
+            <HiddenTab />
+          </TabTrigger>
+          <TabTrigger name="profileDetails" href="/profileDetails" asChild>
+            <HiddenTab />
+          </TabTrigger>
+          <TabTrigger
+            name="identityVerification"
+            href="/identityVerification"
+            asChild
+          >
+            <HiddenTab />
+          </TabTrigger>
+          <TabTrigger name="notifications" href="/notifications" asChild>
+            <HiddenTab />
+          </TabTrigger>
+          <TabTrigger name="appPreferences" href="/appPreferences" asChild>
+            <HiddenTab />
+          </TabTrigger>
+          <TabTrigger name="securityPrivacy" href="/securityPrivacy" asChild>
+            <HiddenTab />
+          </TabTrigger>
+          <TabTrigger name="helpCentre" href="/helpCentre" asChild>
             <HiddenTab />
           </TabTrigger>
         </FloatingTabList>

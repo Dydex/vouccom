@@ -20,12 +20,12 @@ import { formatNaira } from "@/constants/currency";
 import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
 import { ACTIVITY, DRAWS } from "@/data/draws";
 import { ENTRIES, WINS } from "@/data/entries";
+import { USER } from "@/data/user";
 import { WALLET_BALANCE } from "@/data/wallet";
 import { BROWSE_LISTINGS, FEATURED_LISTINGS } from "@/data/listings";
 import { useTheme } from "@/hooks/use-theme";
 
-// TODO: read the signed-in user's name from the backend.
-const USER_NAME = "Kola";
+const USER_NAME = USER.firstName;
 
 const SIDE = 20;
 
