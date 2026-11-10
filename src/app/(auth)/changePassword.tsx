@@ -17,6 +17,20 @@ export default function ChangePassword() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
 
+  const confirm = () => {
+    if (password.length === 0) {
+      toast.show({ message: "Please enter a new password." });
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.show({ message: "Passwords do not match." });
+      return;
+    }
+    // TODO: save the new password on the backend before moving on.
+    toast.show({ message: "Password changed successfully." });
+    router.replace("/login");
+  };
+
   return (
     <SafeAreaView
       style={[styles.container, { backgroundColor: theme.background }]}
@@ -59,11 +73,7 @@ export default function ChangePassword() {
 
         <Pressable
           accessibilityRole="button"
-          // TODO: check the two passwords match and save the new one before this
-          onPress={() => {
-            toast.show({ message: "Password changed successfully." });
-            router.replace("/login");
-          }}
+          onPress={confirm}
           style={({ pressed }) => [
             styles.confirm,
             { backgroundColor: theme.brand },
@@ -97,7 +107,7 @@ const styles = StyleSheet.create({
   },
   backArrow: {
     width: 18,
-    height: 14, // backarrow.png is a 4x export (72x56)
+    height: 14, 
   },
   title: {
     fontSize: 26,
