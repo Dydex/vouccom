@@ -1,5 +1,6 @@
 import { Image } from "expo-image";
 import { SymbolView } from "expo-symbols";
+import type { ReactNode } from "react";
 import { Pressable, StyleSheet, TextInput, View } from "react-native";
 
 import {
@@ -15,6 +16,8 @@ type ListControlsProps<S extends string> = {
   query: string;
   onQueryChange: (query: string) => void;
   onFilterPress?: () => void;
+  /** An extra round button placed before the filter button. */
+  leading?: ReactNode;
   date: DateFilter;
   onDateChange: (date: DateFilter) => void;
   status: S;
@@ -56,22 +59,42 @@ export function SearchField({
   );
 }
 
-export function FilterButton({ onPress }: { onPress?: () => void }) {
+/** Round grey icon button used beside the search field. */
+export function IconButton({
+  label,
+  onPress,
+  children,
+}: {
+  label: string;
+  onPress?: () => void;
+  children: ReactNode;
+}) {
   const theme = useTheme();
 
   return (
     <Pressable
       accessibilityRole="button"
-      accessibilityLabel="Filters"
+      accessibilityLabel={label}
       onPress={onPress}
       style={[styles.filterButton, { backgroundColor: theme.card }]}
     >
+      {children}
+    </Pressable>
+  );
+}
+
+export function FilterButton({ onPress }: { onPress?: () => void }) {
+  const theme = useTheme();
+
+  return (
+    <IconButton label="Filters" onPress={onPress}>
       <SymbolView
         name={{ ios: "slider.horizontal.3", android: "tune", web: "tune" }}
         tintColor={theme.text}
+        weight="bold"
         size={18}
       />
-    </Pressable>
+    </IconButton>
   );
 }
 
@@ -81,6 +104,7 @@ export function ListControls<S extends string>({
   query,
   onQueryChange,
   onFilterPress,
+  leading,
   date,
   onDateChange,
   status,
@@ -98,7 +122,10 @@ export function ListControls<S extends string>({
       />
 
       <View style={styles.filters}>
-        <FilterButton onPress={onFilterPress} />
+        <View style={styles.leftButtons}>
+          {leading}
+          <FilterButton onPress={onFilterPress} />
+        </View>
         <View style={styles.dropdowns}>
           <FilterDropdown
             label="Date"
@@ -153,6 +180,10 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",
+  },
+  leftButtons: {
+    flexDirection: "row",
+    gap: Spacing.two,
   },
   dropdowns: {
     flexDirection: "row",

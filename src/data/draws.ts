@@ -78,3 +78,94 @@ export const ACTIVITY: Activity[] = Array.from({ length: 9 }, (_, i) => ({
   ...ACTIVITY_SAMPLES[i % ACTIVITY_SAMPLES.length],
   id: `a${i + 1}`,
 }));
+
+// ---- The Draws tab: every draw, not just the user's own ----
+
+export type DrawStatus = "live" | "upcoming" | "completed";
+
+export type DrawListItem = {
+  id: string;
+  title: string;
+  /** Extra assets in the same draw, shown as "+ 2 more". */
+  extraAssets?: number;
+  status: DrawStatus;
+  /** Number of assets up for grabs */
+  assets: number;
+  /** The assets in this draw, for the details pop-up. */
+  assetList: { title: string; listingId?: string }[];
+  /** e.g. "24 Sep, 8PM" */
+  drawDate: string;
+  /** The winning entry of a completed draw. */
+  winningEntry?: string;
+  /** Where the draw is streamed. */
+  link?: string;
+  /** e.g. "24 Sep." */
+  date: string;
+  /** e.g. "12 hours left" or "2 days ago" */
+  timeLabel: string;
+  /** Days since the draw's date. 0 = today. */
+  daysAgo: number;
+  // What the Filters sheet filters on (taken from the first asset).
+  category: CategoryId;
+  brand: string;
+  voucherPrice: number;
+  assetValue: number;
+};
+
+// TODO: replace with the draws from the backend.
+export const ALL_DRAWS: DrawListItem[] = [
+  {
+    id: "ad1",
+    title: "UK Used 2026 Honda Civic",
+    extraAssets: 2,
+    status: "live",
+    assets: 3,
+    assetList: [
+      { title: "UK Used 2026 Honda Civic", listingId: "b3" },
+      { title: "New 2026 Ford Bronco", listingId: "b2" },
+      { title: "New 2025 Toyota Camry" },
+    ],
+    drawDate: "24 Sep, 8PM",
+    link: "https://www.youtube.com",
+    date: "24 Sep.",
+    timeLabel: "12 hours left",
+    daysAgo: 0,
+    category: "cars",
+    brand: "Honda",
+    voucherPrice: 500,
+    assetValue: 900_000,
+  },
+  {
+    id: "ad2",
+    title: "UK Used 2026 Honda Civic",
+    status: "upcoming",
+    assets: 1,
+    assetList: [{ title: "UK Used 2026 Honda Civic", listingId: "b3" }],
+    drawDate: "24 Sep, 8PM",
+    link: "https://www.youtube.com",
+    date: "24 Sep.",
+    timeLabel: "12 hours left",
+    daysAgo: 0,
+    category: "cars",
+    brand: "Honda",
+    voucherPrice: 500,
+    assetValue: 900_000,
+  },
+  {
+    id: "ad3",
+    title: "UK Used 2026 Honda Civic",
+    status: "completed",
+    assets: 1,
+    assetList: [{ title: "UK Used 2026 Honda Civic", listingId: "b3" }],
+    drawDate: "24 Sep, 8PM",
+    winningEntry: "#10393",
+    link: "https://www.youtube.com",
+    date: "24 Sep.",
+    timeLabel: "2 days ago",
+    daysAgo: 0,
+    category: "cars",
+    brand: "Honda",
+    voucherPrice: 500,
+    assetValue: 900_000,
+  },
+];

@@ -86,6 +86,7 @@ export function FilterDropdown<T extends string>({
                 }
           }
           tintColor={theme.text}
+          weight="bold"
           size={12}
         />
       </Pressable>
@@ -159,6 +160,7 @@ const styles = StyleSheet.create({
   },
   pillText: {
     fontSize: 13,
+    fontWeight: "500",
   },
   menu: {
     position: "absolute",
