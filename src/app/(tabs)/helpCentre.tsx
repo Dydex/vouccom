@@ -1,4 +1,5 @@
 import { Image } from "expo-image";
+import { router } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -23,7 +24,8 @@ export default function HelpCentreScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
 
-  // TODO: show the messages for the transaction that was tapped.
+  // TODO: show the messages for the transaction that was tapped (or, from the
+  // "Contact Support" button, all of the user's support messages).
   const [messagesOpen, setMessagesOpen] = useState(false);
 
   return (
@@ -59,7 +61,7 @@ export default function HelpCentreScreen() {
           pillColor={theme.greyButton}
           pillTextColor={theme.text}
           actionLabel="view all"
-          // TODO: open the full list of help articles.
+          onAction={() => router.push("/helpResources")}
         />
         <View style={[styles.faqs, { backgroundColor: theme.card }]}>
           {FAQS.map((question, i) => (
@@ -96,7 +98,7 @@ export default function HelpCentreScreen() {
           </Text>
           <Pressable
             accessibilityRole="button"
-            // TODO: open support (chat, email or phone) once the app has one.
+            onPress={() => setMessagesOpen(true)}
             style={({ pressed }) => [
               styles.support,
               { backgroundColor: theme.balanceButton },

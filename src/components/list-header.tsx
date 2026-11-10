@@ -1,6 +1,7 @@
 import { Image } from "expo-image";
-import { router } from "expo-router";
+import { router, type Href } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import type { ReactNode } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -11,9 +12,9 @@ type ListHeaderProps = {
   title: string;
   backgroundColor: string;
   /** Result of require("...png"): a pre-cropped export that sits on the band's bottom edge. */
-  image: number;
-  imageWidth: number;
-  imageHeight: number;
+  image?: number;
+  imageWidth?: number;
+  imageHeight?: number;
   /** Distance from the right edge. Negative values let transparent padding hang off-screen. */
   imageRight?: number;
   /** Defaults to dark icons, for light bands. Use "auto" for a band that follows the theme. */
@@ -22,12 +23,11 @@ type ListHeaderProps = {
   showBack?: boolean;
   /** Colour of the title and back arrow. Defaults to dark. */
   contentColor?: string;
+  /** Where "back" goes when there is nothing to go back to. */
+  backFallback?: Href;
+  /** Extra content under the title inside the band, such as a search field. */
+  children?: ReactNode;
 };
-
-function goBack() {
-  if (router.canGoBack()) router.back();
-  else router.replace("/home");
-}
 
 /** Coloured band with a back arrow, a title and an illustration (My Entries, My Draws). */
 export function ListHeader({
@@ -40,6 +40,8 @@ export function ListHeader({
   statusBarStyle = "dark",
   showBack = true,
   contentColor,
+  backFallback = "/home",
+  children,
 }: ListHeaderProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -48,21 +50,25 @@ export function ListHeader({
   return (
     <View style={[styles.header, { backgroundColor, paddingTop: insets.top }]}>
       <StatusBar style={statusBarStyle} />
-      <Image
-        source={image}
-        style={[
-          styles.illustration,
-          { width: imageWidth, height: imageHeight, right: imageRight },
-        ]}
-        contentFit="contain"
-      />
+      {image !== undefined && (
+        <Image
+          source={image}
+          style={[
+            styles.illustration,
+            { width: imageWidth, height: imageHeight, right: imageRight },
+          ]}
+          contentFit="contain"
+        />
+      )}
       <View style={styles.titleRow}>
         {showBack && (
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Go back"
             hitSlop={12}
-            onPress={goBack}
+            onPress={() =>
+              router.canGoBack() ? router.back() : router.replace(backFallback)
+            }
           >
             <Image
               source={require("@/assets/images/common/backarrow.png")}
@@ -74,13 +80,14 @@ export function ListHeader({
         )}
         <Text style={[styles.title, { color }]}>{title}</Text>
       </View>
+      {children}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   header: {
-    height: 144,
+    minHeight: 144,
     overflow: "hidden",
     justifyContent: "flex-end",
     paddingHorizontal: 20,

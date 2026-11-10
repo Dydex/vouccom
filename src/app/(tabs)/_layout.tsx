@@ -32,6 +32,9 @@ const CHILD_ROUTES: Record<string, string[]> = {
     "/appPreferences",
     "/securityPrivacy",
     "/helpCentre",
+    "/helpResources",
+    "/contactUs",
+    "/legal",
   ],
 };
 
@@ -147,6 +150,15 @@ export default function TabsLayout() {
             <HiddenTab />
           </TabTrigger>
           <TabTrigger name="helpCentre" href="/helpCentre" asChild>
+            <HiddenTab />
+          </TabTrigger>
+          <TabTrigger name="helpResources" href="/helpResources" asChild>
+            <HiddenTab />
+          </TabTrigger>
+          <TabTrigger name="contactUs" href="/contactUs" asChild>
+            <HiddenTab />
+          </TabTrigger>
+          <TabTrigger name="legal" href="/legal" asChild>
             <HiddenTab />
           </TabTrigger>
         </FloatingTabList>

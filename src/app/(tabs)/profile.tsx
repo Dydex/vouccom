@@ -173,6 +173,8 @@ export default function ProfileScreen() {
     if (id === "app") router.push("/appPreferences");
     if (id === "security") router.push("/securityPrivacy");
     if (id === "help") router.push("/helpCentre");
+    if (id === "contact") router.push("/contactUs");
+    if (id === "legal") router.push("/legal");
     if (id === "logout") confirmLogOut();
     // TODO: every other row needs its own screen.
   };
