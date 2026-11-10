@@ -39,12 +39,12 @@ export function TransactionRow({
         ]}
       >
         <Image
-          source={require("@/assets/images/common/backarrow.png")}
-          style={[
-            styles.arrow,
-            // The back arrow points left: turned a quarter either way it points up or down.
-            { transform: [{ rotate: incoming ? "90deg" : "-90deg" }] },
-          ]}
+          source={
+            incoming
+              ? require("@/assets/images/common/Arrow Up.png")
+              : require("@/assets/images/common/Arrow Down.png")
+          }
+          style={styles.arrow}
           contentFit="contain"
           tintColor={incoming ? theme.moneyIn : theme.moneyOut}
         />
@@ -95,8 +95,8 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   arrow: {
-    width: 18,
-    height: 14, // backarrow.png is a 4x export (72x56)
+    width: 20,
+    height: 20, // Arrow Up.png and Arrow Down.png are 4x exports (80x80)
   },
   text: {
     flex: 1,
