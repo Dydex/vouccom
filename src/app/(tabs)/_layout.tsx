@@ -1,5 +1,4 @@
 import { Image } from "expo-image";
-import { usePathname } from "expo-router";
 import {
   TabList,
   TabSlot,
@@ -22,22 +21,6 @@ const ICONS: Record<string, number> = {
   profile: require("@/assets/images/tabIcons/Person.png"),
 };
 
-/** Sub-screens that live under a tab and should keep that tab highlighted. */
-const CHILD_ROUTES: Record<string, string[]> = {
-  home: ["/entries", "/myDraws", "/myWins", "/activity"],
-  profile: [
-    "/profileDetails",
-    "/identityVerification",
-    "/notifications",
-    "/appPreferences",
-    "/securityPrivacy",
-    "/helpCentre",
-    "/helpResources",
-    "/contactUs",
-    "/legal",
-  ],
-};
-
 function TabButton({
   isFocused,
   name,
@@ -45,30 +28,23 @@ function TabButton({
   ...props
 }: TabTriggerSlotProps & { name: string; label: string }) {
   const theme = useTheme();
-  const pathname = usePathname();
-  const active = !!isFocused || !!CHILD_ROUTES[name]?.includes(pathname);
 
   return (
     <Pressable
       {...(props as unknown as PressableProps)}
       accessibilityRole="tab"
       accessibilityLabel={label}
-      accessibilityState={{ selected: active }}
-      style={[styles.button, active && { backgroundColor: theme.tabActive }]}
+      accessibilityState={{ selected: !!isFocused }}
+      style={[styles.button, isFocused && { backgroundColor: theme.tabActive }]}
     >
       <Image
         source={ICONS[name]}
         style={styles.icon}
         contentFit="contain"
-        tintColor={active ? theme.brand : theme.text}
+        tintColor={isFocused ? theme.brand : theme.text}
       />
     </Pressable>
   );
-}
-
-/** Registers a route with the tab navigator without rendering a button for it. */
-function HiddenTab(_props: TabTriggerSlotProps) {
-  return null;
 }
 
 function FloatingTabList(props: TabListProps) {
@@ -83,7 +59,6 @@ function FloatingTabList(props: TabListProps) {
         {
           backgroundColor: theme.tabBar,
           bottom: Math.max(insets.bottom, 12) + 8,
-          // Soft blue glow around the bar (light mode only).
           shadowColor: theme.tabGlow,
           shadowOpacity: 0.22,
           shadowRadius: 18,
@@ -97,8 +72,7 @@ function FloatingTabList(props: TabListProps) {
 
 export default function TabsLayout() {
   return (
-    // "Back" returns to the screen you came from. The default jumps to the first
-    // tab (Home), which is wrong for sub-screens such as Profile Details.
+  
     <Tabs options={{ backBehavior: "history" }}>
       <TabSlot style={{ flex: 1 }} />
       <TabList asChild>
@@ -117,49 +91,6 @@ export default function TabsLayout() {
           </TabTrigger>
           <TabTrigger name="profile" href="/profile" asChild>
             <TabButton name="profile" label="Profile" />
-          </TabTrigger>
-          <TabTrigger name="entries" href="/entries" asChild>
-            <HiddenTab />
-          </TabTrigger>
-          <TabTrigger name="myDraws" href="/myDraws" asChild>
-            <HiddenTab />
-          </TabTrigger>
-          <TabTrigger name="myWins" href="/myWins" asChild>
-            <HiddenTab />
-          </TabTrigger>
-          <TabTrigger name="activity" href="/activity" asChild>
-            <HiddenTab />
-          </TabTrigger>
-          <TabTrigger name="profileDetails" href="/profileDetails" asChild>
-            <HiddenTab />
-          </TabTrigger>
-          <TabTrigger
-            name="identityVerification"
-            href="/identityVerification"
-            asChild
-          >
-            <HiddenTab />
-          </TabTrigger>
-          <TabTrigger name="notifications" href="/notifications" asChild>
-            <HiddenTab />
-          </TabTrigger>
-          <TabTrigger name="appPreferences" href="/appPreferences" asChild>
-            <HiddenTab />
-          </TabTrigger>
-          <TabTrigger name="securityPrivacy" href="/securityPrivacy" asChild>
-            <HiddenTab />
-          </TabTrigger>
-          <TabTrigger name="helpCentre" href="/helpCentre" asChild>
-            <HiddenTab />
-          </TabTrigger>
-          <TabTrigger name="helpResources" href="/helpResources" asChild>
-            <HiddenTab />
-          </TabTrigger>
-          <TabTrigger name="contactUs" href="/contactUs" asChild>
-            <HiddenTab />
-          </TabTrigger>
-          <TabTrigger name="legal" href="/legal" asChild>
-            <HiddenTab />
           </TabTrigger>
         </FloatingTabList>
       </TabList>

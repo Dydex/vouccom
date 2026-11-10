@@ -42,7 +42,6 @@ export default function DrawsScreen() {
   const [status, setStatus] = useState<StatusFilter>("all");
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
-  // Kept after closing so the pop-up keeps its content while it fades out.
   const [selected, setSelected] = useState<DrawListItem | null>(null);
   const [detailsOpen, setDetailsOpen] = useState(false);
 
@@ -54,7 +53,7 @@ export default function DrawsScreen() {
         d.daysAgo >= minDays &&
         d.daysAgo <= maxDays &&
         (status === "all" ||
-          // Live and upcoming draws are active; completed ones are closed.
+
           (status === "closed") === (d.status === "completed")) &&
         (!q || d.title.toLowerCase().includes(q)) &&
         matchesFilters(d, filters),
@@ -94,7 +93,7 @@ export default function DrawsScreen() {
             leading={
               <IconButton
                 label="My draws"
-                onPress={() => router.push("/myDraws")}
+                onPress={() => router.push("/home/myDraws")}
               >
                 <SymbolView
                   name={{ ios: "person", android: "person", web: "person" }}
@@ -158,8 +157,6 @@ export default function DrawsScreen() {
               }
             : undefined,
         }))}
-        // Live draws can be watched, finished ones replayed, upcoming ones added to a calendar.
-        // TODO: the calendar needs expo-calendar.
         actionLabel={
           selected
             ? {

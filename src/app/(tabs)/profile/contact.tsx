@@ -122,7 +122,7 @@ function LinkRow({
     >
       <Text style={[styles.value, { color: theme.text }]}>{text}</Text>
       <Image
-        source={require("@/assets/images/common/backarrow.png")}
+        source={require("@/assets/images/common/Arrow Right.png")}
         style={styles.forward}
         contentFit="contain"
         tintColor={theme.text}
@@ -160,10 +160,8 @@ const styles = StyleSheet.create({
     alignSelf: "flex-start",
   },
   forward: {
-    width: 18,
-    height: 14,
-    // The back arrow, flipped to point forward.
-    transform: [{ scaleX: -1 }],
+    width: 20,
+    height: 20, // Arrow Right.png is a 4x export (80x80)
   },
   address: {
     fontSize: 15,

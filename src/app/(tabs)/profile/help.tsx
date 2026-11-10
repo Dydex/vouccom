@@ -61,7 +61,7 @@ export default function HelpCentreScreen() {
           pillColor={theme.greyButton}
           pillTextColor={theme.text}
           actionLabel="view all"
-          onAction={() => router.push("/helpResources")}
+          onAction={() => router.push("/profile/resources")}
         />
         <View style={[styles.faqs, { backgroundColor: theme.card }]}>
           {FAQS.map((question, i) => (
@@ -82,7 +82,7 @@ export default function HelpCentreScreen() {
                 {question}
               </Text>
               <Image
-                source={require("@/assets/images/common/backarrow.png")}
+                source={require("@/assets/images/common/Arrow Right.png")}
                 style={styles.forward}
                 contentFit="contain"
                 tintColor={theme.text}
@@ -152,10 +152,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   forward: {
-    width: 18,
-    height: 14,
-    // The back arrow, flipped to point forward.
-    transform: [{ scaleX: -1 }],
+    width: 20,
+    height: 20, 
   },
   pressed: {
     opacity: 0.7,

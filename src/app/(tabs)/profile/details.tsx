@@ -12,11 +12,9 @@ type Field = {
   label: string;
   value: string;
   verified?: boolean;
-  /** The action icon on the right. */
   action: { label: string; icon: number };
 };
 
-// The exported icons are white 4x images (80x80), shown at 18x18 and tinted.
 const EDIT = {
   label: "Edit",
   icon: require("@/assets/images/profile/Edit.png"),

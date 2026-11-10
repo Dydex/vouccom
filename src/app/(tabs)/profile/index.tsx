@@ -167,14 +167,14 @@ export default function ProfileScreen() {
   const insets = useSafeAreaInsets();
 
   const onPress = (id: string) => {
-    if (id === "profile") router.push("/profileDetails");
-    if (id === "identity") router.push("/identityVerification");
-    if (id === "notifications") router.push("/notifications");
-    if (id === "app") router.push("/appPreferences");
-    if (id === "security") router.push("/securityPrivacy");
-    if (id === "help") router.push("/helpCentre");
-    if (id === "contact") router.push("/contactUs");
-    if (id === "legal") router.push("/legal");
+    if (id === "profile") router.push("/profile/details");
+    if (id === "identity") router.push("/profile/identity");
+    if (id === "notifications") router.push("/profile/notifications");
+    if (id === "app") router.push("/profile/preferences");
+    if (id === "security") router.push("/profile/security");
+    if (id === "help") router.push("/profile/help");
+    if (id === "contact") router.push("/profile/contact");
+    if (id === "legal") router.push("/profile/legal");
     if (id === "logout") confirmLogOut();
     // TODO: every other row needs its own screen.
   };
@@ -271,7 +271,7 @@ export default function ProfileScreen() {
                   {row.label}
                 </Text>
                 <Image
-                  source={require("@/assets/images/common/backarrow.png")}
+                  source={require("@/assets/images/common/Arrow Right.png")}
                   style={styles.forward}
                   contentFit="contain"
                   tintColor={theme.text}
@@ -391,10 +391,8 @@ const styles = StyleSheet.create({
     fontSize: 14,
   },
   forward: {
-    width: 18,
-    height: 14,
-    // The back arrow, flipped to point forward.
-    transform: [{ scaleX: -1 }],
+    width: 20,
+    height: 20, 
   },
   footer: {
     alignItems: "center",

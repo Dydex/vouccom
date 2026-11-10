@@ -152,7 +152,7 @@ export default function HomeScreen() {
           barColor={theme.entriesBar}
           pillColor={theme.entriesPill}
           pillTextColor={theme.text}
-          onAction={() => router.push("/entries")}
+          onAction={() => router.push("/home/entries")}
         />
         <View style={styles.rowList}>
           {ACTIVE_ENTRIES.map((entry) => (
@@ -166,7 +166,7 @@ export default function HomeScreen() {
           barColor={theme.drawsBar}
           pillColor={theme.drawsPill}
           pillTextColor={theme.text}
-          onAction={() => router.push("/myDraws")}
+          onAction={() => router.push("/home/myDraws")}
         />
         <View style={styles.rowList}>
           {DRAWS.map((draw) => (
@@ -181,7 +181,7 @@ export default function HomeScreen() {
           pillColor={theme.winsPill}
           pillTextColor={theme.onBadge}
           titleColor={theme.onBadge}
-          onAction={() => router.push("/myWins")}
+          onAction={() => router.push("/home/myWins")}
         />
         <View style={styles.rowList}>
           {WINS.slice(0, 1).map((win) => (
@@ -195,7 +195,7 @@ export default function HomeScreen() {
           barColor={theme.activityBar}
           pillColor={theme.activityPill}
           pillTextColor={theme.text}
-          onAction={() => router.push("/activity")}
+          onAction={() => router.push("/home/activity")}
         />
         <View style={styles.rowList}>
           {ACTIVITY.slice(0, 3).map((activity) => (
