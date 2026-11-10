@@ -70,8 +70,14 @@ function FloatingTabList(props: TabListProps) {
       style={[
         styles.bar,
         {
-          backgroundColor: theme.surface,
+          backgroundColor: theme.tabBar,
           bottom: Math.max(insets.bottom, 12) + 8,
+          // Soft blue glow around the bar (light mode only).
+          shadowColor: theme.tabGlow,
+          shadowOpacity: 0.22,
+          shadowRadius: 18,
+          shadowOffset: { width: 0, height: 0 },
+          elevation: theme.tabGlow === "transparent" ? 0 : 10,
         },
       ]}
     />

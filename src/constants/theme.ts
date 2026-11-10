@@ -54,7 +54,13 @@ export const Colors = {
     badgeSoon: "#FFE039",
     onBadge: "#1E1F20",
     balanceButton: "#1438B8",
-    tabActive: "#E0E1E6",
+    tabActive: "#E2F0FF",
+    tabBar: "#FFFFFF",
+    tabGlow: "#2855FF",
+    moneyIn: "#29C674",
+    moneyInBg: "#ECFEF5",
+    moneyOut: "#FF808B",
+    moneyOutBg: "#FFEEF0",
   },
   dark: {
     text: "#ffffff",
@@ -103,6 +109,12 @@ export const Colors = {
     onBadge: "#1E1F20",
     balanceButton: "#1438B8",
     tabActive: "#383B41",
+    tabBar: "#25272C",
+    tabGlow: "transparent", // the dark mockups have no glow
+    moneyIn: "#29C674",
+    moneyInBg: "#1F3A2E",
+    moneyOut: "#FF808B",
+    moneyOutBg: "#3B2A2E",
   },
 } as const;
 
