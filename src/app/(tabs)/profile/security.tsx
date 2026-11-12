@@ -1,14 +1,8 @@
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { useState, type ReactNode } from "react";
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Switch,
-  Text,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";
+import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { PlainHeader } from "@/components/plain-header";

@@ -1,6 +1,7 @@
 import { Image } from "expo-image";
 import { SymbolView, type SymbolViewProps } from "expo-symbols";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { Text } from "@/components/text";
 
 import { Spacing } from "@/constants/theme";
 import type { Activity } from "@/data/draws";

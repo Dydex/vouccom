@@ -1,4 +1,5 @@
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet, View } from "react-native";
+import { Text } from "@/components/text";
 
 import { BottomSheet } from "@/components/bottom-sheet";
 import { QuantityBar } from "@/components/quantity-bar";

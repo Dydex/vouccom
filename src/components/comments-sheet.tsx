@@ -1,6 +1,7 @@
 import { Image } from "expo-image";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Text, TextInput } from "@/components/text";
 
 import { BottomSheet } from "@/components/bottom-sheet";
 import { QuantityBar } from "@/components/quantity-bar";

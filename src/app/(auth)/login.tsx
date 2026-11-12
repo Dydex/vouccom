@@ -2,14 +2,8 @@ import { Image } from "expo-image";
 import { useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useState } from "react";
-import {
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text, TextInput } from "@/components/text";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PasswordField } from "@/components/password-field";

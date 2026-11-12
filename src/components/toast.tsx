@@ -9,15 +9,8 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import {
-  Animated,
-  Easing,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-  useWindowDimensions,
-} from "react-native";
+import { Animated, Easing, Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
+import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Spacing } from "@/constants/theme";

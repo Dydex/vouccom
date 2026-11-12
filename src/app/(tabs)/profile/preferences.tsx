@@ -1,7 +1,8 @@
 import { Image } from "expo-image";
 import { SymbolView } from "expo-symbols";
 import { useState, type ReactNode } from "react";
-import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
+import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { PhoneIcon } from "@/components/phone-icon";

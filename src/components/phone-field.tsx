@@ -1,6 +1,7 @@
 import { SymbolView } from "expo-symbols";
 import { useState } from "react";
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Text, TextInput } from "@/components/text";
 
 import { CountryPicker, type Country } from "@/components/country-picker";
 import { Spacing } from "@/constants/theme";

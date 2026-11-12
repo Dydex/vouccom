@@ -1,7 +1,8 @@
 import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useMemo, useState } from "react";
-import { FlatList, Linking, StyleSheet, Text, View } from "react-native";
+import { FlatList, Linking, StyleSheet, View } from "react-native";
+import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { DrawDetailsSheet } from "@/components/draw-details-sheet";

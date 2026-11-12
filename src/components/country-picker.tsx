@@ -1,15 +1,8 @@
 import { all } from "country-codes-list";
 import { SymbolView } from "expo-symbols";
 import { useMemo, useState } from "react";
-import {
-  FlatList,
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-} from "react-native";
+import { FlatList, Modal, Pressable, StyleSheet, View } from "react-native";
+import { Text, TextInput } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Spacing } from "@/constants/theme";

@@ -2,7 +2,8 @@ import { Image } from "expo-image";
 import { router, type Href } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import type { ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { Spacing } from "@/constants/theme";

@@ -1,13 +1,7 @@
 import { SymbolView } from "expo-symbols";
 import { useEffect, useState } from "react";
-import {
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
-  type TextInputProps,
-} from "react-native";
+import { Pressable, StyleSheet, View, type TextInputProps } from "react-native";
+import { Text, TextInput } from "@/components/text";
 
 import { BottomSheet } from "@/components/bottom-sheet";
 import { CardLogo } from "@/components/card-logo";

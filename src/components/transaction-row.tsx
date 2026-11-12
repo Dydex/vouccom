@@ -1,5 +1,6 @@
 import { Image } from "expo-image";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Text } from "@/components/text";
 
 import { formatNaira } from "@/constants/currency";
 import { Spacing } from "@/constants/theme";

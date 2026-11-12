@@ -1,7 +1,8 @@
 import { Image } from "expo-image";
 import { SymbolView } from "expo-symbols";
 import { useEffect, useState, type ReactNode } from "react";
-import { Pressable, StyleSheet, Text, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
+import { Text } from "@/components/text";
 
 import { BottomSheet } from "@/components/bottom-sheet";
 import { CardLogo } from "@/components/card-logo";

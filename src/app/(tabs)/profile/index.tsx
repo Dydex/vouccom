@@ -3,14 +3,8 @@ import { Image } from "expo-image";
 import { router } from "expo-router";
 import { SymbolView, type SymbolViewProps } from "expo-symbols";
 import type { ReactNode } from "react";
-import {
-  Alert,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { PhoneIcon } from "@/components/phone-icon";

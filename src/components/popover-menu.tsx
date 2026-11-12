@@ -1,12 +1,6 @@
 import { useRef, useState, type ComponentRef, type ReactNode } from "react";
-import {
-  Modal,
-  Pressable,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { Modal, Pressable, StyleSheet, useWindowDimensions, View } from "react-native";
+import { Text } from "@/components/text";
 
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";

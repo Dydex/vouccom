@@ -1,4 +1,5 @@
-import { Linking, Pressable, StyleSheet, Text, View } from "react-native";
+import { Linking, Pressable, StyleSheet, View } from "react-native";
+import { Text } from "@/components/text";
 
 import { BottomSheet } from "@/components/bottom-sheet";
 import { Spacing } from "@/constants/theme";

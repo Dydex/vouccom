@@ -3,16 +3,8 @@ import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SymbolView, type SymbolViewProps } from "expo-symbols";
 import { useState } from "react";
-import {
-  FlatList,
-  Pressable,
-  ScrollView,
-  Share,
-  StyleSheet,
-  Text,
-  useWindowDimensions,
-  View,
-} from "react-native";
+import { FlatList, Pressable, ScrollView, Share, StyleSheet, useWindowDimensions, View } from "react-native";
+import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { CheckoutSheet } from "@/components/checkout-sheet";
