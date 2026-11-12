@@ -12,7 +12,9 @@ export default function OnboardingPageFour() {
   const theme = useTheme();
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.background }]}
+    >
       <View style={[styles.card, { backgroundColor: theme.coral }]}>
         <Image
           source={require("@/assets/images/onboarding/Die@4x 2.png")}
@@ -28,7 +30,9 @@ export default function OnboardingPageFour() {
       </View>
 
       <View style={styles.copy}>
-        <Text style={[styles.title, { color: theme.text }]}>Take Part for a{"\n"}Chance to Win!</Text>
+        <Text style={[styles.title, { color: theme.text }]}>
+          Take Part for a{"\n"}Chance to Win!
+        </Text>
         <Text style={[styles.subtitle, { color: theme.text }]}>
           Take part in live draws for the opportunity{"\n"}to drive away with
           your chosen asset.
@@ -44,7 +48,9 @@ export default function OnboardingPageFour() {
           pressed && styles.buttonPressed,
         ]}
       >
-        <Text style={[styles.buttonText, { color: theme.onBrand }]}>Get Started</Text>
+        <Text style={[styles.buttonText, { color: theme.onBrand }]}>
+          Get Started
+        </Text>
       </Pressable>
     </SafeAreaView>
   );
@@ -56,16 +62,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: Spacing.four - Spacing.one,
     paddingTop: Spacing.four + Spacing.one,
+    // Space under the button, above the system navigation bar.
+    paddingBottom: Spacing.four,
   },
   card: {
     alignSelf: "stretch",
-    height: 406,
+    // 406 on a tall phone (the design), but it shrinks so the text and the button
+    // always fit on shorter screens.
+    flex: 1,
+    minHeight: 200,
+    maxHeight: 406,
+    overflow: "hidden",
     borderRadius: 28,
   },
   dice: {
     position: "absolute",
     alignSelf: "center",
-    top: 113,
+    // Centred in the card, nudged -90 to match the design at 406 tall.
+    top: "50%",
+    marginTop: -90,
     width: 308,
     height: 311,
   },

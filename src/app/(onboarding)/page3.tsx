@@ -12,7 +12,9 @@ export default function OnboardingPageThree() {
   const theme = useTheme();
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.background }]}
+    >
       <View style={[styles.card, { backgroundColor: theme.accent }]}>
         <Image
           source={require("@/assets/images/onboarding/Voucher 2@4x 1.png")}
@@ -28,7 +30,9 @@ export default function OnboardingPageThree() {
       </View>
 
       <View style={styles.copy}>
-        <Text style={[styles.title, { color: theme.text }]}>Get Closer To{"\n"}Your Dream Asset</Text>
+        <Text style={[styles.title, { color: theme.text }]}>
+          Get Closer To{"\n"}Your Dream Asset
+        </Text>
         <Text style={[styles.subtitle, { color: theme.text }]}>
           Purchase affordable voucher entries for{"\n"}a chance to access
           high-value vehicles.
@@ -56,16 +60,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: Spacing.four - Spacing.one,
     paddingTop: Spacing.four + Spacing.one,
+    // Space under the button, above the system navigation bar.
+    paddingBottom: Spacing.four,
   },
   card: {
     alignSelf: "stretch",
-    height: 406,
+    // 406 on a tall phone (the design), but it shrinks so the text and the button
+    // always fit on shorter screens.
+    flex: 1,
+    minHeight: 200,
+    maxHeight: 406,
+    overflow: "hidden",
     borderRadius: 28,
   },
   vouchers: {
     position: "absolute",
     right: -20,
-    top: 112,
+    // Centred in the card, nudged -91 to match the design at 406 tall.
+    top: "50%",
+    marginTop: -91,
     width: 322,
     height: 247,
   },

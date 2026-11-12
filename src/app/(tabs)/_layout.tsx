@@ -72,7 +72,6 @@ function FloatingTabList(props: TabListProps) {
 
 export default function TabsLayout() {
   return (
-  
     <Tabs options={{ backBehavior: "history" }}>
       <TabSlot style={{ flex: 1 }} />
       <TabList asChild>
@@ -115,7 +114,8 @@ const styles = StyleSheet.create({
     height: 26,
   },
   button: {
-    width: 70,
+    flex: 1,
+    maxWidth: 70,
     height: 46,
     borderRadius: 23,
     alignItems: "center",

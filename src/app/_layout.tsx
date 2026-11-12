@@ -1,5 +1,6 @@
 import { DarkTheme, DefaultTheme, ThemeProvider, Stack } from 'expo-router';
 import { useFonts } from 'expo-font';
+import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
 import { useColorScheme } from 'react-native';
 
@@ -33,6 +34,9 @@ export default function RootLayout() {
 
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+      {/* Light icons on dark screens, dark icons on light ones. Screens with a
+          coloured band set their own. */}
+      <StatusBar style="auto" />
       <ToastProvider>
         <AnimatedSplashOverlay />
         <Stack screenOptions={{ headerShown: false }}>

@@ -12,7 +12,9 @@ export default function OnboardingPageTwo() {
   const theme = useTheme();
 
   return (
-    <SafeAreaView style={[styles.container, { backgroundColor: theme.background }]}>
+    <SafeAreaView
+      style={[styles.container, { backgroundColor: theme.background }]}
+    >
       <View style={[styles.card, { backgroundColor: theme.brand }]}>
         <Image
           source={require("@/assets/images/onboarding/Discover 4.png")}
@@ -28,7 +30,9 @@ export default function OnboardingPageTwo() {
       </View>
 
       <View style={styles.copy}>
-        <Text style={[styles.title, { color: theme.text }]}>Discover{"\n"}Your Dream Asset</Text>
+        <Text style={[styles.title, { color: theme.text }]}>
+          Discover{"\n"}Your Dream Asset
+        </Text>
         <Text style={[styles.subtitle, { color: theme.text }]}>
           Explore verified vehicles and find{"\n"}your next opportunity on
           VOUCCOM.
@@ -56,16 +60,25 @@ const styles = StyleSheet.create({
     alignItems: "center",
     paddingHorizontal: Spacing.four - Spacing.one,
     paddingTop: Spacing.four + Spacing.one,
+    // Space under the button, above the system navigation bar.
+    paddingBottom: Spacing.four,
   },
   card: {
     alignSelf: "stretch",
-    height: 406,
+    // 406 on a tall phone (the design), but it shrinks so the text and the button
+    // always fit on shorter screens.
+    flex: 1,
+    minHeight: 200,
+    maxHeight: 406,
+    overflow: "hidden",
     borderRadius: 28,
   },
   lens: {
     position: "absolute",
     left: -20,
-    top: 118,
+    // Centred in the card, nudged -85 to match the design at 406 tall.
+    top: "50%",
+    marginTop: -85,
     width: 331,
     height: 222,
   },
