@@ -19,6 +19,7 @@ import {
   setAuthToken,
   type User,
 } from "@/lib/api";
+import { queryClient } from "@/lib/query-client";
 
 const TOKEN_KEY = "vouccom.session-token";
 
@@ -50,6 +51,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const clearSession = useCallback(async () => {
     await SecureStore.deleteItemAsync(TOKEN_KEY);
     setAuthToken(null);
+    // Don't show the next account this user's data.
+    queryClient.clear();
     setUser(null);
     setStatus("signedOut");
   }, []);

@@ -1,9 +1,12 @@
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
+import { useMemo } from "react";
 import {
+  ActivityIndicator,
   FlatList,
   Pressable,
+  RefreshControl,
   ScrollView,
   StyleSheet,
   View,
@@ -16,6 +19,7 @@ import { DrawRow } from "@/components/draw-row";
 import { EntryRow } from "@/components/entry-row";
 import { ListingCard } from "@/components/listing-card";
 import { SectionBar } from "@/components/section-bar";
+import { useToast } from "@/components/toast";
 import { VerifyEmailBanner } from "@/components/verify-email-banner";
 import { formatNaira } from "@/constants/currency";
 import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
@@ -23,20 +27,42 @@ import { ACTIVITY, DRAWS } from "@/data/draws";
 import { ENTRIES, WINS } from "@/data/entries";
 import { USER } from "@/data/user";
 import { WALLET_BALANCE } from "@/data/wallet";
-import { BROWSE_LISTINGS, FEATURED_LISTINGS } from "@/data/listings";
+import type { Listing } from "@/data/listings";
+import { useListings } from "@/hooks/use-listings";
 import { useTheme } from "@/hooks/use-theme";
 import { useAuth } from "@/state/auth";
 
 const SIDE = 20;
 
 const ACTIVE_ENTRIES = ENTRIES.filter((e) => e.status === "active").slice(0, 3);
+const BROWSE_COUNT = 8;
 
 export default function HomeScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
-  const { user } = useAuth();
+  const toast = useToast();
+  const { user, refreshUser } = useAuth();
   // Falls back to sample data until the user has loaded.
   const firstName = user?.profile.firstName ?? USER.firstName;
+
+  const { listings, status, error, refreshing, refresh, retry } =
+    useListings();
+  const featured = useMemo(() => listings.filter((l) => l.featured), [listings]);
+  // Featured listings already have their own row above.
+  const browse = useMemo(
+    () => listings.filter((l) => !l.featured).slice(0, BROWSE_COUNT),
+    [listings],
+  );
+
+  const onRefresh = async () => {
+    const [ok] = await Promise.all([refresh(), refreshUser()]);
+    if (!ok) {
+      toast.show({
+        tone: "error",
+        message: "Couldn't refresh the listings. Pull to try again.",
+      });
+    }
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -114,6 +140,13 @@ export default function HomeScreen() {
       <ScrollView
         style={styles.scroll}
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.brand}
+          />
+        }
         contentContainerStyle={{
           paddingBottom:
             FloatingTabBarHeight + Math.max(insets.bottom, 12) + Spacing.five,
@@ -121,18 +154,20 @@ export default function HomeScreen() {
       >
         <VerifyEmailBanner />
 
-        {/* Featured */}
-        <Text style={[styles.sectionTitle, { color: theme.text }]}>
-          Featured
-        </Text>
-        <FlatList
-          horizontal
-          data={FEATURED_LISTINGS}
-          keyExtractor={(item) => item.id}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.rowContent}
-          renderItem={({ item }) => <ListingCard listing={item} />}
-        />
+        {/* Featured: hidden when nothing is featured */}
+        {(status !== "ready" || featured.length > 0) && (
+          <>
+            <Text style={[styles.sectionTitle, { color: theme.text }]}>
+              Featured
+            </Text>
+            <ListingRow
+              listings={featured}
+              status={status}
+              error={error?.message}
+              onRetry={retry}
+            />
+          </>
+        )}
 
         {/* Browse listings */}
         <SectionBar
@@ -142,13 +177,12 @@ export default function HomeScreen() {
           pillTextColor={theme.text}
           onAction={() => router.push("/listings")}
         />
-        <FlatList
-          horizontal
-          data={BROWSE_LISTINGS}
-          keyExtractor={(item) => item.id}
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.rowContent}
-          renderItem={({ item }) => <ListingCard listing={item} compact />}
+        <ListingRow
+          compact
+          listings={browse}
+          status={status}
+          error={error?.message}
+          onRetry={retry}
         />
 
         {/* My active entries */}
@@ -209,6 +243,63 @@ export default function HomeScreen() {
         </View>
       </ScrollView>
     </View>
+  );
+}
+
+/** A horizontal row of listing cards, or its loading, error or empty state. */
+function ListingRow({
+  listings,
+  status,
+  error,
+  onRetry,
+  compact,
+}: {
+  listings: Listing[];
+  status: "loading" | "ready" | "error";
+  error?: string;
+  onRetry: () => void;
+  compact?: boolean;
+}) {
+  const theme = useTheme();
+
+  if (status === "loading") {
+    return (
+      <View style={styles.rowState}>
+        <ActivityIndicator color={theme.brand} />
+      </View>
+    );
+  }
+
+  if (status === "error" || listings.length === 0) {
+    return (
+      <View style={styles.rowState}>
+        <Text style={[styles.rowStateText, { color: theme.textSecondary }]}>
+          {status === "error"
+            ? (error ?? "Couldn't load the listings.")
+            : "No listings yet."}
+        </Text>
+        {status === "error" && (
+          <Pressable accessibilityRole="button" onPress={onRetry} hitSlop={8}>
+            <Text style={[styles.retryText, { color: theme.brand }]}>
+              Try again
+            </Text>
+          </Pressable>
+        )}
+      </View>
+    );
+  }
+
+  return (
+    <FlatList
+      horizontal
+      data={listings}
+      keyExtractor={(item) => item.id}
+      showsHorizontalScrollIndicator={false}
+      contentContainerStyle={styles.rowContent}
+      renderItem={({ item }) => (
+        <ListingCard listing={item} compact={compact} />
+      )}
+    />
   );
 }
 
@@ -299,6 +390,21 @@ const styles = StyleSheet.create({
   rowContent: {
     paddingHorizontal: SIDE,
     gap: Spacing.three,
+  },
+  rowState: {
+    minHeight: 120,
+    marginHorizontal: SIDE,
+    alignItems: "center",
+    justifyContent: "center",
+    gap: Spacing.two,
+  },
+  rowStateText: {
+    fontSize: 13,
+    textAlign: "center",
+  },
+  retryText: {
+    fontSize: 13,
+    fontWeight: "600",
   },
   rowList: {
     marginHorizontal: SIDE,

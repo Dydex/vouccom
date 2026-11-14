@@ -19,6 +19,10 @@ export type Listing = {
   badge: ListingBadge;
   /** Text shown inside the badge */
   badgeLabel: string;
+  /** Shown in Home's Featured row. */
+  featured?: boolean;
+  /** Undefined until the full listing has loaded. */
+  savedByMe?: boolean;
   /** require("...png") for bundled images, or a URL from the API. */
   image: number | string;
   // Optional details for the listing screen (fall back to sensible defaults).

@@ -2,6 +2,7 @@ import { DarkTheme, DefaultTheme, ThemeProvider, Stack } from "expo-router";
 import { useFonts } from "expo-font";
 import { StatusBar } from "expo-status-bar";
 import * as SplashScreen from "expo-splash-screen";
+import { QueryClientProvider } from "@tanstack/react-query";
 import { useColorScheme } from "react-native";
 
 import {
@@ -15,6 +16,7 @@ import {
 import { AnimatedSplashOverlay } from "@/components/animated-icon";
 import { FONT_FILES } from "@/components/text";
 import { ToastProvider } from "@/components/toast";
+import { queryClient } from "@/lib/query-client";
 import { AuthProvider, useAuth } from "@/state/auth";
 
 SplashScreen.preventAutoHideAsync();
@@ -35,11 +37,13 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       <StatusBar style="auto" />
-      <AuthProvider>
-        <ToastProvider>
-          <RootNavigator />
-        </ToastProvider>
-      </AuthProvider>
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <ToastProvider>
+            <RootNavigator />
+          </ToastProvider>
+        </AuthProvider>
+      </QueryClientProvider>
     </ThemeProvider>
   );
 }

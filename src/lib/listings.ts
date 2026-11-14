@@ -111,6 +111,11 @@ function infoFor(api: ApiListing): ListingInfo {
   };
 }
 
+/** Sample listings use short ids like "f1"; the API's are 24-character hex. */
+export function isApiListingId(id: string) {
+  return /^[a-f\d]{24}$/.test(id);
+}
+
 export function toListing(api: ApiListing, now = Date.now()): Listing {
   const daysLeft = Math.max(
     0,
@@ -132,6 +137,8 @@ export function toListing(api: ApiListing, now = Date.now()): Listing {
     daysLeft,
     listedDaysAgo,
     ...badgeFor(daysLeft, listedDaysAgo),
+    featured: api.featured,
+    savedByMe: api.savedByMe,
     // TODO: a placeholder image when a listing has none.
     image: api.images[0] ?? "",
     images: api.images.length > 0 ? api.images : undefined,
