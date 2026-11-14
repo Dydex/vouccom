@@ -3,22 +3,17 @@ import { useEffect, useRef, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { Text, TextInput } from "@/components/text";
+import { CodeInput } from "@/components/code-input";
+import { Text } from "@/components/text";
 import { useToast } from "@/components/toast";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import { ApiError, requestEmailCode, verifyEmail } from "@/lib/api";
+import { maskEmail } from "@/lib/format";
 import { useAuth } from "@/state/auth";
 
 const CODE_LENGTH = 6;
 const RESEND_AFTER_SECONDS = 60;
-
-/** "supremeajala@gmail.com" -> "su••••••••••@gmail.com" */
-function maskEmail(email: string) {
-  const [name, domain] = email.split("@");
-  if (!domain) return email;
-  return `${name.slice(0, 2)}${"•".repeat(Math.max(name.length - 2, 1))}@${domain}`;
-}
 
 export default function VerifyEmail() {
   const router = useRouter();
@@ -32,7 +27,6 @@ export default function VerifyEmail() {
   const { status, refreshUser } = useAuth();
 
   const [code, setCode] = useState("");
-  const [focused, setFocused] = useState(false);
   const [verifying, setVerifying] = useState(false);
   const [secondsLeft, setSecondsLeft] = useState(RESEND_AFTER_SECONDS);
 
@@ -85,7 +79,8 @@ export default function VerifyEmail() {
           tone: "success",
           message: "Email verified. You can sign in now.",
         });
-        router.replace({ pathname: "/login", params: { email } });
+        // Close sign-up and this screen rather than stacking a second login on top.
+        router.dismissTo({ pathname: "/login", params: { email } });
       }
     } catch (error) {
       setCode("");
@@ -127,44 +122,7 @@ export default function VerifyEmail() {
         </Text>
 
         <View style={styles.codeRow}>
-          {Array.from({ length: CODE_LENGTH }, (_, i) => {
-            const active =
-              focused && i === Math.min(code.length, CODE_LENGTH - 1);
-            return (
-              <View
-                key={i}
-                style={[
-                  styles.box,
-                  {
-                    backgroundColor: theme.greyButton,
-                    borderColor: active ? theme.brand : "transparent",
-                  },
-                ]}
-              >
-                <Text style={[styles.digit, { color: theme.text }]}>
-                  {code[i] ?? ""}
-                </Text>
-              </View>
-            );
-          })}
-
-          {/* One invisible input over the boxes: handles typing, paste and code autofill. */}
-          <TextInput
-            value={code}
-            onChangeText={(text) =>
-              setCode(text.replace(/\D/g, "").slice(0, CODE_LENGTH))
-            }
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            keyboardType="number-pad"
-            textContentType="oneTimeCode"
-            autoComplete="one-time-code"
-            maxLength={CODE_LENGTH}
-            autoFocus
-            caretHidden
-            accessibilityLabel="Verification code"
-            style={styles.hiddenInput}
-          />
+          <CodeInput length={CODE_LENGTH} value={code} onChangeText={setCode} />
         </View>
 
         <Pressable
@@ -247,29 +205,6 @@ const styles = StyleSheet.create({
   },
   codeRow: {
     marginTop: Spacing.five,
-    flexDirection: "row",
-    gap: Spacing.two,
-  },
-  box: {
-    width: 46,
-    height: 52,
-    borderRadius: 14,
-    borderWidth: 1.5,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  digit: {
-    fontSize: 22,
-    fontWeight: "500",
-  },
-  hiddenInput: {
-    position: "absolute",
-    top: 0,
-    right: 0,
-    bottom: 0,
-    left: 0,
-    opacity: 0.01,
-    color: "transparent",
   },
   verify: {
     alignSelf: "stretch",

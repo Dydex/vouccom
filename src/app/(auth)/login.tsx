@@ -130,7 +130,12 @@ export default function Login() {
 
             <Pressable
               accessibilityRole="button"
-              onPress={() => router.push("/forgotPassword")}
+              onPress={() =>
+                router.push({
+                  pathname: "/forgotPassword",
+                  params: { email: email.trim() },
+                })
+              }
             >
               <Text style={[styles.small, { color: theme.text }]}>
                 Forgot Password?

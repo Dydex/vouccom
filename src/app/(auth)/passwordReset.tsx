@@ -1,25 +1,50 @@
 import { Image } from "expo-image";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { Text, TextInput } from "@/components/text";
+import { CodeInput } from "@/components/code-input";
+import { Text } from "@/components/text";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useToast } from "@/components/toast";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+import { ApiError, forgotPassword } from "@/lib/api";
+import { maskEmail } from "@/lib/format";
 
-const OTP_LENGTH = 4;
+const OTP_LENGTH = 6;
+const RESEND_AFTER_SECONDS = 60;
 
 export default function PasswordReset() {
   const router = useRouter();
   const theme = useTheme();
-  const { phone } = useLocalSearchParams<{ phone?: string }>();
+  const toast = useToast();
+  const { email = "" } = useLocalSearchParams<{ email?: string }>();
 
   const [code, setCode] = useState("");
-  const [focused, setFocused] = useState(false);
+  const [secondsLeft, setSecondsLeft] = useState(RESEND_AFTER_SECONDS);
 
-  const lastDigits = phone ? phone.slice(-2) : "";
   const complete = code.length === OTP_LENGTH;
+
+  useEffect(() => {
+    if (secondsLeft <= 0) return;
+    const timer = setTimeout(() => setSecondsLeft((s) => s - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [secondsLeft]);
+
+  const resend = async () => {
+    setSecondsLeft(RESEND_AFTER_SECONDS);
+    try {
+      await forgotPassword(email);
+      toast.show({ tone: "success", message: "We sent you a new code." });
+    } catch (error) {
+      toast.show({
+        tone: "error",
+        message:
+          error instanceof ApiError ? error.message : "Couldn't send the code.",
+      });
+    }
+  };
 
   return (
     <SafeAreaView
@@ -48,48 +73,16 @@ export default function PasswordReset() {
           Enter the OTP
         </Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-          {lastDigits
-            ? `We've sent a one time password to your\nnumber ending in ${lastDigits}`
-            : "We've sent a one time password to your\nphone number"}
+          {`We've sent a 6-digit code to\n${maskEmail(email)}`}
         </Text>
 
-        {/* One hidden input holds the code; the circles just display it. */}
         <View style={styles.otpRow}>
-          {Array.from({ length: OTP_LENGTH }, (_, i) => {
-            const isActive = focused && i === Math.min(code.length, OTP_LENGTH - 1);
-            return (
-              <View
-                key={i}
-                style={[
-                  styles.circle,
-                  {
-                    backgroundColor: theme.greyButton,
-                    borderColor: isActive ? theme.brand : "transparent",
-                  },
-                ]}
-              >
-                <Text style={[styles.digit, { color: theme.text }]}>
-                  {code[i] ?? ""}
-                </Text>
-              </View>
-            );
-          })}
-
-          <TextInput
+          <CodeInput
+            length={OTP_LENGTH}
             value={code}
-            onChangeText={(text) =>
-              setCode(text.replace(/\D/g, "").slice(0, OTP_LENGTH))
-            }
-            onFocus={() => setFocused(true)}
-            onBlur={() => setFocused(false)}
-            keyboardType="number-pad"
-            textContentType="oneTimeCode"
-            autoComplete="sms-otp"
-            maxLength={OTP_LENGTH}
-            autoFocus
-            caretHidden
+            onChangeText={setCode}
+            shape="circle"
             accessibilityLabel="One time password"
-            style={styles.hiddenInput}
           />
         </View>
 
@@ -97,8 +90,13 @@ export default function PasswordReset() {
           accessibilityRole="button"
           accessibilityState={{ disabled: !complete }}
           disabled={!complete}
-          // TODO: verify the code with the backend before navigating
-          onPress={() => router.push("/changePassword")}
+          // The API checks the code together with the new password, on the next screen.
+          onPress={() =>
+            router.push({
+              pathname: "/changePassword",
+              params: { email, code },
+            })
+          }
           style={({ pressed }) => [
             styles.confirm,
             { backgroundColor: theme.brand },
@@ -114,15 +112,17 @@ export default function PasswordReset() {
           <Text style={[styles.small, { color: theme.textSecondary }]}>
             didn't receive any code?
           </Text>
-          <Pressable
-            accessibilityRole="button"
-            // TODO: request a new code
-            onPress={() => {}}
-          >
-            <Text style={[styles.small, styles.bold, { color: theme.text }]}>
-              Resend Code
+          {secondsLeft > 0 ? (
+            <Text style={[styles.small, { color: theme.textSecondary }]}>
+              Resend in {secondsLeft}s
             </Text>
-          </Pressable>
+          ) : (
+            <Pressable accessibilityRole="button" onPress={resend} hitSlop={8}>
+              <Text style={[styles.small, styles.bold, { color: theme.text }]}>
+                Resend Code
+              </Text>
+            </Pressable>
+          )}
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -147,7 +147,7 @@ const styles = StyleSheet.create({
   },
   backArrow: {
     width: 18,
-    height: 14, 
+    height: 14,
   },
   title: {
     fontSize: 26,
@@ -164,29 +164,6 @@ const styles = StyleSheet.create({
   },
   otpRow: {
     marginTop: Spacing.five,
-    flexDirection: "row",
-    justifyContent: "center",
-    gap: Spacing.four,
-  },
-  circle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1.5,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  digit: {
-    fontSize: 18,
-    fontWeight: "600",
-  },
-  hiddenInput: {
-    position: "absolute",
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    opacity: 0,
   },
   confirm: {
     marginTop: Spacing.four,

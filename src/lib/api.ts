@@ -217,6 +217,34 @@ export function verifyEmail(email: string, code: string) {
   });
 }
 
+/** Always succeeds, so it never reveals whether the email has an account. */
+export function forgotPassword(email: string) {
+  return request<unknown>("/auth/forgot-password", {
+    method: "POST",
+    body: { email },
+  });
+}
+
+/** Signs the account out on every device. Wrong or expired codes return 400. */
+export function resetPassword(
+  email: string,
+  code: string,
+  newPassword: string,
+) {
+  return request<unknown>("/auth/reset-password", {
+    method: "POST",
+    body: { email, code, newPassword },
+  });
+}
+
+/** For a signed-in user who knows their current password. */
+export function changePassword(currentPassword: string, newPassword: string) {
+  return request<unknown>("/auth/password", {
+    method: "PATCH",
+    body: { currentPassword, newPassword },
+  });
+}
+
 export function getMe(options: { timeoutMs?: number } = {}) {
   return request<{ user: User }>("/auth/me", options);
 }

@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "@/components/text";
@@ -9,27 +9,69 @@ import { PasswordField } from "@/components/password-field";
 import { useToast } from "@/components/toast";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+import { ApiError, changePassword, resetPassword } from "@/lib/api";
 
 export default function ChangePassword() {
   const router = useRouter();
   const theme = useTheme();
   const toast = useToast();
 
+  // With a code we're finishing "forgot password"; without one, a signed-in
+  // user is changing their password from Security & Privacy.
+  const { email = "", code } = useLocalSearchParams<{
+    email?: string;
+    code?: string;
+  }>();
+  const resetting = Boolean(code);
+
+  const [currentPassword, setCurrentPassword] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
-  const confirm = () => {
-    if (password.length === 0) {
-      toast.show({ tone: "error", message: "Please enter a new password." });
+  const confirm = async () => {
+    if (!resetting && !currentPassword) {
+      toast.show({ tone: "error", message: "Enter your current password." });
+      return;
+    }
+    if (password.length < 8) {
+      toast.show({
+        tone: "error",
+        message: "Your new password needs at least 8 characters.",
+      });
       return;
     }
     if (password !== confirmPassword) {
       toast.show({ tone: "error", message: "Passwords do not match." });
       return;
     }
-    // TODO: save the new password on the backend before moving on.
-    toast.show({ tone: "success", message: "Password changed successfully." });
-    router.replace("/login");
+
+    setSubmitting(true);
+    try {
+      if (resetting) {
+        await resetPassword(email, code!, password);
+        toast.show({
+          tone: "success",
+          message: "Password changed. Sign in with your new password.",
+        });
+        // Close the whole reset flow rather than stacking a second login on top.
+        router.dismissTo({ pathname: "/login", params: { email } });
+      } else {
+        await changePassword(currentPassword, password);
+        toast.show({ tone: "success", message: "Password changed." });
+        router.back();
+      }
+    } catch (error) {
+      toast.show({
+        tone: "error",
+        message:
+          error instanceof ApiError
+            ? error.message
+            : "Couldn't change your password. Please try again.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -60,6 +102,14 @@ export default function ChangePassword() {
         </Text>
 
         <View style={styles.form}>
+          {!resetting && (
+            <PasswordField
+              value={currentPassword}
+              onChangeText={setCurrentPassword}
+              placeholder="Current Password"
+              autoComplete="current-password"
+            />
+          )}
           <PasswordField
             value={password}
             onChangeText={setPassword}
@@ -74,15 +124,17 @@ export default function ChangePassword() {
 
         <Pressable
           accessibilityRole="button"
+          accessibilityState={{ busy: submitting, disabled: submitting }}
+          disabled={submitting}
           onPress={confirm}
           style={({ pressed }) => [
             styles.confirm,
             { backgroundColor: theme.brand },
-            pressed && styles.pressed,
+            (pressed || submitting) && styles.pressed,
           ]}
         >
           <Text style={[styles.confirmText, { color: theme.onBrand }]}>
-            Confirm
+            {submitting ? "Saving..." : "Confirm"}
           </Text>
         </Pressable>
       </ScrollView>

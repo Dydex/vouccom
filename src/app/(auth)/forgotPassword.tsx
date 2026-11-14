@@ -1,23 +1,51 @@
 import { Image } from "expo-image";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
-import { Text } from "@/components/text";
+import { Text, TextInput } from "@/components/text";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { DEFAULT_COUNTRY, type Country } from "@/components/country-picker";
-import { PhoneField } from "@/components/phone-field";
 import { useToast } from "@/components/toast";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+import { ApiError, forgotPassword } from "@/lib/api";
 
 export default function ForgotPassword() {
   const router = useRouter();
   const theme = useTheme();
   const toast = useToast();
 
-  const [country, setCountry] = useState<Country>(DEFAULT_COUNTRY);
-  const [phone, setPhone] = useState("");
+  const params = useLocalSearchParams<{ email?: string }>();
+  const [email, setEmail] = useState(params.email ?? "");
+  const [submitting, setSubmitting] = useState(false);
+
+  const sendCode = async () => {
+    const address = email.trim();
+    if (!address) {
+      toast.show({ tone: "error", message: "Enter your email address." });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await forgotPassword(address);
+      toast.show({
+        title: "Check your email",
+        message: "If an account uses this email, we've sent it a 6-digit code.",
+      });
+      router.push({ pathname: "/passwordReset", params: { email: address } });
+    } catch (error) {
+      toast.show({
+        tone: "error",
+        message:
+          error instanceof ApiError
+            ? error.message
+            : "Couldn't send the code. Please try again.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <SafeAreaView
@@ -46,36 +74,39 @@ export default function ForgotPassword() {
           Forgot your password?
         </Text>
         <Text style={[styles.subtitle, { color: theme.textSecondary }]}>
-          Don't fret! Just type in your registered phone number and we will send
-          you a code to reset your password
+          Don't fret! Just type in your registered email address and we will
+          send you a code to reset your password
         </Text>
 
         <View style={styles.form}>
-          <PhoneField
-            country={country}
-            onCountryChange={setCountry}
-            value={phone}
-            onChangeText={setPhone}
+          <TextInput
+            value={email}
+            onChangeText={setEmail}
+            placeholder="Email"
+            placeholderTextColor={theme.placeholder}
+            keyboardType="email-address"
+            autoCapitalize="none"
+            autoComplete="email"
+            style={[
+              styles.input,
+              { backgroundColor: theme.greyButton, color: theme.text },
+            ]}
           />
         </View>
 
         <Pressable
           accessibilityRole="button"
-          onPress={() => {
-            toast.show({
-              title: "Check your email",
-              message: "We've sent reset instructions to your mail",
-            });
-            router.replace({ pathname: "/passwordReset", params: { phone } });
-          }}
+          accessibilityState={{ busy: submitting, disabled: submitting }}
+          disabled={submitting}
+          onPress={sendCode}
           style={({ pressed }) => [
             styles.submit,
             { backgroundColor: theme.brand },
-            pressed && styles.pressed,
+            (pressed || submitting) && styles.pressed,
           ]}
         >
           <Text style={[styles.submitText, { color: theme.onBrand }]}>
-            Reset password
+            {submitting ? "Sending code..." : "Reset password"}
           </Text>
         </Pressable>
       </ScrollView>
@@ -101,7 +132,7 @@ const styles = StyleSheet.create({
   },
   backArrow: {
     width: 18,
-    height: 14, 
+    height: 14,
   },
   title: {
     fontSize: 26,
@@ -118,6 +149,12 @@ const styles = StyleSheet.create({
   },
   form: {
     marginTop: Spacing.five,
+  },
+  input: {
+    height: 44,
+    borderRadius: 999,
+    paddingHorizontal: Spacing.three,
+    fontSize: 14,
   },
   submit: {
     marginTop: Spacing.four - Spacing.one,
