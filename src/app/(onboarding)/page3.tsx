@@ -70,7 +70,6 @@ const styles = StyleSheet.create({
     flex: 1,
     minHeight: 200,
     maxHeight: 406,
-    overflow: "hidden",
     borderRadius: 28,
   },
   vouchers: {
