@@ -1,18 +1,21 @@
 import { Image } from "expo-image";
 import { useState } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { Text, TextInput } from "@/components/text";
 
 import { BottomSheet } from "@/components/bottom-sheet";
 import { QuantityBar } from "@/components/quantity-bar";
 import { Spacing } from "@/constants/theme";
-import { SAMPLE_COMMENTS, stampNow, type Comment } from "@/data/comments";
+import { useComments, usePostComment } from "@/hooks/use-comments";
 import { useTheme } from "@/hooks/use-theme";
+import { ApiError } from "@/lib/api";
+import { isApiListingId } from "@/lib/listings";
 
 /** How many comments show before "See all". */
 const LATEST = 2;
 
 type CommentsSheetProps = {
+  listingId: string;
   visible: boolean;
   onClose: () => void;
   quantity: number;
@@ -24,6 +27,7 @@ type CommentsSheetProps = {
 
 /** "Comments" pop-up: write a comment and read the latest ones. */
 export function CommentsSheet({
+  listingId,
   visible,
   onClose,
   quantity,
@@ -34,26 +38,24 @@ export function CommentsSheet({
 }: CommentsSheetProps) {
   const theme = useTheme();
 
-  const [comments, setComments] = useState<Comment[]>(SAMPLE_COMMENTS);
+  // Sample listings have no comments on the server.
+  const live = isApiListingId(listingId);
+  const query = useComments(listingId, visible && live);
+  const post = usePostComment(listingId);
+
   const [draft, setDraft] = useState("");
   const [showAll, setShowAll] = useState(false);
 
-  const canSubmit = draft.trim().length > 0;
+  const comments = query.data ?? [];
+  const canSubmit = live && draft.trim().length > 0 && !post.isPending;
   const shown = showAll ? comments : comments.slice(0, LATEST);
+  const hasMore = comments.length > LATEST || query.hasNextPage;
 
   const submit = () => {
     if (!canSubmit) return;
-    // TODO: post the comment to the backend and use the signed-in user's name.
-    setComments((list) => [
-      {
-        id: `new-${Date.now()}`,
-        author: "You",
-        text: draft.trim(),
-        ...stampNow(),
-      },
-      ...list,
-    ]);
-    setDraft("");
+    post.mutate(draft.trim(), {
+      onSuccess: () => setDraft(""),
+    });
   };
 
   return (
@@ -98,10 +100,21 @@ export function CommentsSheet({
             pressed && styles.pressed,
           ]}
         >
-          <Text style={[styles.submitText, { color: theme.onBrand }]}>
-            Submit
-          </Text>
+          {post.isPending ? (
+            <ActivityIndicator color={theme.onBrand} />
+          ) : (
+            <Text style={[styles.submitText, { color: theme.onBrand }]}>
+              Submit
+            </Text>
+          )}
         </Pressable>
+        {post.isError && (
+          <Text style={[styles.message, { color: theme.coral }]}>
+            {post.error instanceof ApiError
+              ? post.error.message
+              : "Couldn't post your comment."}
+          </Text>
+        )}
       </View>
 
       <View style={styles.latest}>
@@ -109,7 +122,7 @@ export function CommentsSheet({
           <Text style={[styles.latestLabel, { color: theme.textSecondary }]}>
             Latest comments
           </Text>
-          {comments.length > LATEST && (
+          {hasMore && (
             <Pressable
               accessibilityRole="button"
               onPress={() => setShowAll((v) => !v)}
@@ -130,6 +143,31 @@ export function CommentsSheet({
           )}
         </View>
 
+        {query.isPending && live ? (
+          <ActivityIndicator style={styles.loading} color={theme.brand} />
+        ) : query.isError && comments.length === 0 ? (
+          <View style={styles.state}>
+            <Text style={[styles.message, { color: theme.textSecondary }]}>
+              {query.error instanceof ApiError
+                ? query.error.message
+                : "Couldn't load the comments."}
+            </Text>
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => query.refetch()}
+              hitSlop={8}
+            >
+              <Text style={[styles.retryText, { color: theme.brand }]}>
+                Try again
+              </Text>
+            </Pressable>
+          </View>
+        ) : comments.length === 0 ? (
+          <Text style={[styles.message, { color: theme.textSecondary }]}>
+            No comments yet. Be the first to ask a question.
+          </Text>
+        ) : null}
+
         {shown.map((comment) => (
           <View
             key={comment.id}
@@ -146,6 +184,23 @@ export function CommentsSheet({
             </Text>
           </View>
         ))}
+
+        {showAll && query.hasNextPage && (
+          <Pressable
+            accessibilityRole="button"
+            disabled={query.isFetchingNextPage}
+            onPress={() => query.fetchNextPage()}
+            style={[styles.loadMore, { backgroundColor: theme.greyButton }]}
+          >
+            {query.isFetchingNextPage ? (
+              <ActivityIndicator color={theme.text} />
+            ) : (
+              <Text style={[styles.seeAllText, { color: theme.text }]}>
+                Load more
+              </Text>
+            )}
+          </Pressable>
+        )}
       </View>
     </BottomSheet>
   );
@@ -184,6 +239,27 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.85,
+  },
+  message: {
+    fontSize: 13,
+    lineHeight: 18,
+  },
+  state: {
+    alignItems: "flex-start",
+    gap: Spacing.two,
+  },
+  retryText: {
+    fontSize: 13,
+    fontWeight: "600",
+  },
+  loading: {
+    marginVertical: Spacing.three,
+  },
+  loadMore: {
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
   },
   latest: {
     gap: Spacing.three,

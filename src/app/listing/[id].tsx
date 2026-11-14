@@ -2,7 +2,7 @@ import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SymbolView, type SymbolViewProps } from "expo-symbols";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -33,9 +33,12 @@ import {
   listingInfo,
   type Listing,
 } from "@/data/listings";
+import { useToast } from "@/components/toast";
+import { useListing, useMyEntries, useSaveListing } from "@/hooks/use-listings";
 import { useTheme } from "@/hooks/use-theme";
-import { ApiError, getListing } from "@/lib/api";
-import { toListing } from "@/lib/listings";
+import { ApiError } from "@/lib/api";
+import { formatTickets } from "@/lib/format";
+import { isApiListingId } from "@/lib/listings";
 
 const SIDE = 20;
 const MAX_QUANTITY = 100;
@@ -55,44 +58,25 @@ function goBack() {
 
 export default function ListingDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  // Home still shows sample listings; everything else comes from the API.
+  // The Draws tab still links to sample listings.
   const sample = findListing(id);
+  const query = useListing(id, !sample);
 
-  const [listing, setListing] = useState<Listing | null>(sample ?? null);
-  const [error, setError] = useState<ApiError | null>(null);
-  const [attempt, setAttempt] = useState(0);
-
-  useEffect(() => {
-    if (sample) return;
-    let cancelled = false;
-    setError(null);
-    getListing(id)
-      .then(({ listing }) => {
-        if (!cancelled) setListing(toListing(listing));
-      })
-      .catch((e) => {
-        if (!cancelled) setError(e instanceof ApiError ? e : null);
-      });
-    // Ignore the answer if the user has already left this screen.
-    return () => {
-      cancelled = true;
-    };
-  }, [id, sample, attempt]);
-
+  const listing = sample ?? query.data;
   if (listing) return <ListingDetails listing={listing} />;
+
+  const error = query.error instanceof ApiError ? query.error : null;
 
   return (
     <Placeholder
-      loading={!error}
+      loading={!query.isError || query.isFetching}
       message={
         error?.status === 404
           ? "This listing is no longer available."
           : (error?.message ?? "")
       }
       onRetry={
-        error && error.status !== 404
-          ? () => setAttempt((n) => n + 1)
-          : undefined
+        error && error.status !== 404 ? () => query.refetch() : undefined
       }
     />
   );
@@ -144,7 +128,40 @@ function ListingDetails({ listing }: { listing: Listing }) {
   const { width } = useWindowDimensions();
 
   const [quantity, setQuantity] = useState(1);
-  const [saved, setSaved] = useState(false);
+  const toast = useToast();
+  const save = useSaveListing(listing.id);
+  // Sample listings (from the Draws tab) keep their sample entries.
+  const live = isApiListingId(listing.id);
+  const mine = useMyEntries(listing.id, live);
+  const winner = mine.data?.winner;
+
+  const entries = live
+    ? mine.data && mine.data.quantity > 0
+      ? {
+          count: mine.data.quantity,
+          detail: `Tickets ${formatTickets(mine.data.ticketNumbers)}`,
+        }
+      : null
+    : listing.userEntries && {
+        count: listing.userEntries.count,
+        detail: `${listing.userEntries.daysAgo} ${listing.userEntries.daysAgo === 1 ? "day" : "days"} ago`,
+      };
+  const saved = listing.savedByMe ?? false;
+
+  const toggleSaved = () => {
+    // Wait for the full listing (savedByMe) and for the last tap to finish.
+    if (listing.savedByMe === undefined || save.isPending) return;
+    save.mutate(!saved, {
+      onError: (error) =>
+        toast.show({
+          tone: "error",
+          message:
+            error instanceof ApiError
+              ? error.message
+              : "Couldn't update your saved listings.",
+        }),
+    });
+  };
   const [page, setPage] = useState(0);
   // Only one pop-up is open at a time.
   const [sheet, setSheet] = useState<Sheet | null>(null);
@@ -308,7 +325,7 @@ function ListingDetails({ listing }: { listing: Listing }) {
               accessibilityRole="button"
               accessibilityLabel={saved ? "Remove from saved" : "Save listing"}
               accessibilityState={{ selected: saved }}
-              onPress={() => setSaved((v) => !v)}
+              onPress={toggleSaved}
               style={[
                 styles.iconCircle,
                 {
@@ -370,18 +387,37 @@ function ListingDetails({ listing }: { listing: Listing }) {
           <Text style={[styles.meta, { color: theme.textSecondary }]}>
             Your entries
           </Text>
-          {listing.userEntries ? (
+          {live && mine.isPending ? (
+            <View style={[styles.entryCard, { backgroundColor: theme.card }]}>
+              <ActivityIndicator color={theme.brand} />
+            </View>
+          ) : live && mine.isError ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => mine.refetch()}
+              style={[styles.entryCard, { backgroundColor: theme.card }]}
+            >
+              <Text
+                style={[styles.entryMetaText, { color: theme.textSecondary }]}
+              >
+                Couldn't load your entries. Tap to try again.
+              </Text>
+            </Pressable>
+          ) : entries ? (
             <View style={[styles.entryCard, { backgroundColor: theme.card }]}>
               <Text style={[styles.entryTitle, { color: theme.text }]}>
-                {listing.userEntries.count}{" "}
-                {listing.userEntries.count === 1 ? "Entry" : "Entries"}
+                {entries.count} {entries.count === 1 ? "Entry" : "Entries"}
               </Text>
               <View style={styles.entryMeta}>
                 <Text
-                  style={[styles.entryMetaText, { color: theme.textSecondary }]}
+                  numberOfLines={1}
+                  style={[
+                    styles.entryMetaText,
+                    styles.entryDetail,
+                    { color: theme.textSecondary },
+                  ]}
                 >
-                  {listing.userEntries.daysAgo}{" "}
-                  {listing.userEntries.daysAgo === 1 ? "day" : "days"} ago
+                  {entries.detail}
                 </Text>
                 <Pressable
                   accessibilityRole="button"
@@ -453,6 +489,7 @@ function ListingDetails({ listing }: { listing: Listing }) {
       />
 
       <CommentsSheet
+        listingId={listing.id}
         visible={sheet === "comments"}
         onClose={() => setSheet(null)}
         quantity={quantity}
@@ -465,9 +502,19 @@ function ListingDetails({ listing }: { listing: Listing }) {
       <DrawDetailsSheet
         visible={sheet === "draw"}
         onClose={() => setSheet(null)}
-        status={drawStatus(listing)}
+        status={
+          winner
+            ? winner.isMe
+              ? "Completed · You won!"
+              : "Completed"
+            : drawStatus(listing)
+        }
+        winningEntry={winner ? `#${winner.ticketNumber}` : undefined}
         dateTime={formatDrawDateTime(listing.drawDate)}
-        link={{ label: "YouTube", url: drawLinkUrl(listing) }}
+        link={{
+          label: "YouTube",
+          url: winner?.drawVideoUrl ?? drawLinkUrl(listing),
+        }}
         // TODO: add the draw to the phone's calendar (needs expo-calendar).
         actionLabel="Add to calendar"
       />
@@ -639,6 +686,10 @@ const styles = StyleSheet.create({
   },
   entryMetaText: {
     fontSize: 10,
+  },
+  entryDetail: {
+    flexShrink: 1,
+    marginRight: Spacing.two,
   },
   bar: {
     paddingTop: Spacing.three,

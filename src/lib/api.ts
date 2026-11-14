@@ -320,3 +320,59 @@ export function getListing(id: string) {
     `/listings/${encodeURIComponent(id)}`,
   );
 }
+
+export type ApiComment = {
+  id: string;
+  body: string;
+  /** Display label, e.g. "David O.", not a full name. */
+  author: string;
+  /** ISO date-time. */
+  createdAt: string;
+};
+
+export type CommentsPage = {
+  comments: ApiComment[];
+  total: number;
+  page: number;
+  pages: number;
+};
+
+export function getComments(listingId: string, page = 1, limit = 20) {
+  return request<CommentsPage>(
+    `/listings/${encodeURIComponent(listingId)}/comments?page=${page}&limit=${limit}`,
+  );
+}
+
+/** 1 to 1000 characters. */
+export function postComment(listingId: string, body: string) {
+  return request<{ comment: ApiComment }>(
+    `/listings/${encodeURIComponent(listingId)}/comments`,
+    { method: "POST", body: { body } },
+  );
+}
+
+export type MyListingEntries = {
+  /** Vouchers the user holds on this listing; 0 if none. */
+  quantity: number;
+  ticketNumbers: number[];
+  /** Null until the draw has happened. */
+  winner: {
+    ticketNumber: number;
+    isMe: boolean;
+    drawVideoUrl: string | null;
+  } | null;
+};
+
+export function getMyListingEntries(listingId: string) {
+  return request<MyListingEntries>(
+    `/listings/${encodeURIComponent(listingId)}/entries/mine`,
+  );
+}
+
+/** Saves (bookmarks) a listing, or removes it from saved. */
+export function setListingSaved(id: string, saved: boolean) {
+  return request<{ saved: boolean }>(
+    `/listings/${encodeURIComponent(id)}/save`,
+    { method: saved ? "POST" : "DELETE" },
+  );
+}
