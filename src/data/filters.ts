@@ -38,7 +38,35 @@ export const PRICE_BUCKETS: {
 ];
 
 /** Bounds of the asset value slider, in naira. */
-export const ASSET_RANGE = { min: 500_000, max: 2_500_000, step: 100_000 };
+export type ValueRange = { min: number; max: number; step: number };
+
+/** Slider limits when there's no data to base them on. */
+export const ASSET_RANGE: ValueRange = {
+  min: 500_000,
+  max: 2_500_000,
+  step: 100_000,
+};
+
+/** Slider limits that cover `values`, rounded to a tidy step (about 20 steps). */
+export function rangeFor(
+  values: number[],
+  fallback: ValueRange = ASSET_RANGE,
+): ValueRange {
+  if (values.length === 0) return fallback;
+  const low = Math.min(...values);
+  const high = Math.max(...values);
+  const step = niceStep((high - low) / 20 || high / 20 || 1);
+  const min = Math.floor(low / step) * step;
+  const max = Math.max(Math.ceil(high / step) * step, min + step);
+  return { min, max, step };
+}
+
+/** Rounds up to 1, 2 or 5 times a power of ten, e.g. 11_500 -> 20_000. */
+function niceStep(raw: number) {
+  const magnitude = 10 ** Math.floor(Math.log10(raw));
+  const n = raw / magnitude;
+  return (n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10) * magnitude;
+}
 
 // TODO: replace with the brands the backend offers for each category.
 // Cars matches the design; the other groups are placeholders.
@@ -70,14 +98,15 @@ export const BRAND_GROUPS: { id: string; label: string; brands: string[] }[] = [
 export type EntryFilters = {
   categories: CategoryId[];
   prices: PriceBucketId[];
-  assetRange: [number, number];
+  /** Null means any value. */
+  assetRange: [number, number] | null;
   brands: string[];
 };
 
 export const DEFAULT_FILTERS: EntryFilters = {
   categories: [],
   prices: [],
-  assetRange: [ASSET_RANGE.min, ASSET_RANGE.max],
+  assetRange: null,
   brands: [],
 };
 
@@ -95,8 +124,8 @@ export function matchesFilters(entry: Filterable, f: EntryFilters): boolean {
     return false;
   }
   if (
-    entry.assetValue < f.assetRange[0] ||
-    entry.assetValue > f.assetRange[1]
+    f.assetRange &&
+    (entry.assetValue < f.assetRange[0] || entry.assetValue > f.assetRange[1])
   ) {
     return false;
   }

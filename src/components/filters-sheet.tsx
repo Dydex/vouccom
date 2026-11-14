@@ -1,6 +1,13 @@
 import { SymbolView } from "expo-symbols";
 import { useEffect, useState, type ReactNode } from "react";
-import { Modal, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from "react-native";
+import {
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -12,6 +19,7 @@ import {
   BRAND_GROUPS,
   CATEGORIES,
   DEFAULT_FILTERS,
+  type ValueRange,
   PRICE_BUCKETS,
   type EntryFilters,
 } from "@/data/filters";
@@ -23,6 +31,8 @@ type FiltersSheetProps = {
   filters: EntryFilters;
   onApply: (filters: EntryFilters) => void;
   onClose: () => void;
+  /** Slider limits for asset value; defaults to ASSET_RANGE. */
+  assetBounds?: ValueRange;
 };
 
 function toggle<T>(list: T[], item: T): T[] {
@@ -34,6 +44,7 @@ export function FiltersSheet({
   filters,
   onApply,
   onClose,
+  assetBounds = ASSET_RANGE,
 }: FiltersSheetProps) {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
@@ -46,6 +57,14 @@ export function FiltersSheet({
   useEffect(() => {
     if (visible) setDraft(filters);
   }, [visible, filters]);
+
+  // What the slider shows: the chosen range kept within the limits, or all of it.
+  const shownRange: [number, number] = draft.assetRange
+    ? [
+        Math.max(draft.assetRange[0], assetBounds.min),
+        Math.min(draft.assetRange[1], assetBounds.max),
+      ]
+    : [assetBounds.min, assetBounds.max];
 
   const update = (patch: Partial<EntryFilters>) =>
     setDraft((d) => ({ ...d, ...patch }));
@@ -71,7 +90,9 @@ export function FiltersSheet({
             { height: height * 0.84, backgroundColor: theme.menu },
           ]}
         >
-          <View style={[styles.header, { borderBottomColor: theme.greyButton }]}>
+          <View
+            style={[styles.header, { borderBottomColor: theme.greyButton }]}
+          >
             <Text style={[styles.headerTitle, { color: theme.text }]}>
               Filters
             </Text>
@@ -121,22 +142,34 @@ export function FiltersSheet({
 
             <Section title="Asset Value Range">
               <View style={styles.rangeRow}>
-                <View style={[styles.rangePill, { backgroundColor: theme.card }]}>
+                <View
+                  style={[styles.rangePill, { backgroundColor: theme.card }]}
+                >
                   <Text style={[styles.rangeText, { color: theme.text }]}>
-                    {formatNaira(draft.assetRange[0])}
+                    {formatNaira(shownRange[0])}
                   </Text>
                 </View>
                 <Text style={{ color: theme.text }}>-</Text>
-                <View style={[styles.rangePill, { backgroundColor: theme.card }]}>
+                <View
+                  style={[styles.rangePill, { backgroundColor: theme.card }]}
+                >
                   <Text style={[styles.rangeText, { color: theme.text }]}>
-                    {formatNaira(draft.assetRange[1])}
+                    {formatNaira(shownRange[1])}
                   </Text>
                 </View>
               </View>
               <RangeSlider
-                {...ASSET_RANGE}
-                value={draft.assetRange}
-                onChange={(assetRange) => update({ assetRange })}
+                {...assetBounds}
+                value={shownRange}
+                onChange={([low, high]) =>
+                  update({
+                    // Back at the full range means "any value" again.
+                    assetRange:
+                      low <= assetBounds.min && high >= assetBounds.max
+                        ? null
+                        : [low, high],
+                  })
+                }
               />
             </Section>
 
@@ -152,7 +185,10 @@ export function FiltersSheet({
                       style={styles.groupHeader}
                     >
                       <Text
-                        style={[styles.groupLabel, { color: theme.placeholder }]}
+                        style={[
+                          styles.groupLabel,
+                          { color: theme.placeholder },
+                        ]}
                       >
                         {group.label}
                       </Text>
@@ -232,7 +268,10 @@ export function FiltersSheet({
             <Pressable
               accessibilityRole="button"
               onPress={() => setDraft(DEFAULT_FILTERS)}
-              style={[styles.footerButton, { backgroundColor: theme.greyButton }]}
+              style={[
+                styles.footerButton,
+                { backgroundColor: theme.greyButton },
+              ]}
             >
               <Text style={[styles.footerText, { color: theme.text }]}>
                 Clear Filters
