@@ -29,14 +29,11 @@ export default function RootLayout() {
     [FONT_FILES.bold]: SpaceGrotesk_700Bold,
   });
 
-  // The splash screen stays up until the fonts are ready (or have failed, in
-  // which case the system font is used instead of blocking the app).
+  // On font error, render anyway with the system font.
   if (!fontsLoaded && !fontError) return null;
 
   return (
     <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
-      {/* Light icons on dark screens, dark icons on light ones. Screens with a
-          coloured band set their own. */}
       <StatusBar style="auto" />
       <AuthProvider>
         <ToastProvider>
@@ -50,7 +47,6 @@ export default function RootLayout() {
 function RootNavigator() {
   const { status } = useAuth();
 
-  // Keep the splash screen up while we check for a saved session.
   if (status === "restoring") return null;
 
   return (
@@ -60,8 +56,7 @@ function RootNavigator() {
         <Stack.Screen name="index" />
         <Stack.Screen name="(onboarding)" />
         <Stack.Screen name="(auth)" />
-        {/* Only for signed-in users. Signing out (or an expired session) sends
-            anyone on these screens to the login screen. */}
+        {/* Redirects to /login when signed out. */}
         <Stack.Protected guard={status === "signedIn"} redirectTo="/login">
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="listing/[id]" />

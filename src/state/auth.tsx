@@ -20,43 +20,33 @@ import {
   type User,
 } from "@/lib/api";
 
-/** Where the token is kept on the phone (encrypted by the system). */
 const TOKEN_KEY = "vouccom.session-token";
 
-/** While signed in without user details (we started offline), retry this often. */
+/** Retry interval while signed in without user details (e.g. started offline). */
 const RETRY_EVERY_MS = 30_000;
 
-/**
- * How long the startup check may hold the splash screen. If the server is this
- * slow, we let the user in and keep trying in the background instead.
- */
+/** Max time the startup check holds the splash screen before continuing offline. */
 const STARTUP_TIMEOUT_MS = 5_000;
 
 type AuthStatus = "restoring" | "signedOut" | "signedIn";
 
-/** What happened when we asked the server for the user. */
 type LoadResult = "loaded" | "rejected" | "unreachable" | "busy";
 
 type AuthContextValue = {
   status: AuthStatus;
-  /** Null while restoring, when signed out, or if we couldn't load it (offline). */
+  /** Null until loaded; may stay null while offline. */
   user: User | null;
-  /** Throws an ApiError when the email or password is wrong. */
   signIn: (email: string, password: string, remember: boolean) => Promise<void>;
   signOut: () => Promise<void>;
-  /** Fetch the user again, e.g. for pull-to-refresh or after editing the profile. */
   refreshUser: () => Promise<unknown>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
 
-/** Gives every screen access to the session. Wrap the whole app in it once. */
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<AuthStatus>("restoring");
   const [user, setUser] = useState<User | null>(null);
 
-  // Forget the session on this phone (the server has already rejected it,
-  // or the user asked to sign out).
   const clearSession = useCallback(async () => {
     await SecureStore.deleteItemAsync(TOKEN_KEY);
     setAuthToken(null);
@@ -64,10 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setStatus("signedOut");
   }, []);
 
-  // Ask the server who the token belongs to. Three possible outcomes:
-  //   it answers       -> we have the user
-  //   it says 401      -> the token is dead, sign out
-  //   it can't be reached -> we learned nothing, keep the token and try later
+  // Only a 401 signs the user out; network errors keep the session.
   const loadingUser = useRef(false);
   const loadUser = useCallback(
     async (timeoutMs?: number): Promise<LoadResult> => {
@@ -82,7 +69,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           await clearSession();
           return "rejected";
         }
-        // Anything else (offline, server hiccup): keep things as they are.
         return "unreachable";
       } finally {
         loadingUser.current = false;
@@ -91,7 +77,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     [clearSession],
   );
 
-  // When the app starts: is there a saved token, and is it still valid?
+  // Restore the saved session on launch.
   useEffect(() => {
     async function restore() {
       const token = await SecureStore.getItemAsync(TOKEN_KEY);
@@ -101,19 +87,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setAuthToken(token);
-      // Still "restoring" (splash screen up) while we check the token, so a
-      // dead token never flashes the Home screen.
       const result = await loadUser(STARTUP_TIMEOUT_MS);
-      // "rejected" has already signed us out. Otherwise we're signed in, even
-      // if offline: user stays null and the effect below keeps trying.
+      // Stay "restoring" until checked so an expired token never shows Home.
       if (result !== "rejected") setStatus("signedIn");
     }
 
     restore();
   }, [loadUser]);
 
-  // Closing the offline gap: signed in, but no user details yet. Try again
-  // whenever the app comes back to the screen, and every 30 seconds meanwhile.
+  // Retry loading the user when the app returns to the foreground, and periodically.
   const missingUser = status === "signedIn" && user === null;
   useEffect(() => {
     if (!missingUser) return;
@@ -123,7 +105,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
     const timer = setInterval(() => loadUser(), RETRY_EVERY_MS);
 
-    // Stop listening once we have the user (or the user signs out).
     return () => {
       subscription.remove();
       clearInterval(timer);
@@ -138,8 +119,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
 
       setAuthToken(token);
-      // "Remember me": keep the token after the app closes. Otherwise it only
-      // lives in memory and the user signs in again next time.
+      // Without "Remember me" the token is kept in memory only.
       if (remember) await SecureStore.setItemAsync(TOKEN_KEY, token);
 
       setUser(user);
@@ -152,7 +132,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     try {
       await logout(); // tell the server, so this token stops working
     } catch {
-      // Offline or already expired: sign out on this phone anyway.
+      // Sign out locally even if the server can't be reached.
     }
     await clearSession();
   }, [clearSession]);
@@ -165,7 +145,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-/** Read the session from any screen: const { user, signOut } = useAuth(); */
 export function useAuth() {
   const value = useContext(AuthContext);
   if (!value) throw new Error("useAuth must be used inside <AuthProvider>");

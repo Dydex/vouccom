@@ -151,8 +151,7 @@ function confirmLogOut(signOut: () => Promise<void>) {
     {
       text: "Log out",
       style: "destructive",
-      // Signing out makes the protected screens unavailable, so the router
-      // sends us to the login screen by itself.
+      // The protected routes redirect to /login once signed out.
       onPress: () => signOut(),
     },
   ]);
@@ -161,7 +160,7 @@ function confirmLogOut(signOut: () => Promise<void>) {
 export default function ProfileScreen() {
   const theme = useTheme();
   const { user, signOut } = useAuth();
-  // From the API when we have it; the sample name otherwise (e.g. offline).
+  // Falls back to sample data until the user has loaded.
   const firstName = user?.profile.firstName ?? USER.firstName;
   const fullName = user
     ? `${user.profile.firstName} ${user.profile.lastName}`
