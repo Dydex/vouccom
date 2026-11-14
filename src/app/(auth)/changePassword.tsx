@@ -20,15 +20,15 @@ export default function ChangePassword() {
 
   const confirm = () => {
     if (password.length === 0) {
-      toast.show({ message: "Please enter a new password." });
+      toast.show({ tone: "error", message: "Please enter a new password." });
       return;
     }
     if (password !== confirmPassword) {
-      toast.show({ message: "Passwords do not match." });
+      toast.show({ tone: "error", message: "Passwords do not match." });
       return;
     }
     // TODO: save the new password on the backend before moving on.
-    toast.show({ message: "Password changed successfully." });
+    toast.show({ tone: "success", message: "Password changed successfully." });
     router.replace("/login");
   };
 
@@ -108,7 +108,7 @@ const styles = StyleSheet.create({
   },
   backArrow: {
     width: 18,
-    height: 14, 
+    height: 14,
   },
   title: {
     fontSize: 26,

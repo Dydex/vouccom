@@ -9,7 +9,14 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { Animated, Easing, Pressable, StyleSheet, View, useWindowDimensions } from "react-native";
+import {
+  Animated,
+  Easing,
+  Pressable,
+  StyleSheet,
+  View,
+  useWindowDimensions,
+} from "react-native";
 import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -21,6 +28,8 @@ export type ToastOptions = {
   /** Adding a title switches to the larger "card" style. */
   title?: string;
   variant?: "pill" | "card";
+  /** Defaults to "success" for cards and "info" for pills. */
+  tone?: "success" | "error" | "info";
   position?: "top" | "bottom" | "center";
   /** How long it stays on screen, in ms. */
   duration?: number;
@@ -93,24 +102,65 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   );
 }
 
-function CheckBadge({ size }: { size: number }) {
+function ToastBadge({
+  tone,
+  size,
+}: {
+  tone: NonNullable<ToastOptions["tone"]>;
+  size: number;
+}) {
   const theme = useTheme();
+
+  if (tone === "success") {
+    return (
+      <View
+        style={[
+          styles.badge,
+          {
+            width: size,
+            height: size,
+            borderRadius: size * 0.3,
+            backgroundColor: "rgba(72, 249, 156, 0.12)",
+          },
+        ]}
+      >
+        <SymbolView
+          name={{ ios: "checkmark", android: "check", web: "check" }}
+          tintColor={theme.accent}
+          weight="bold"
+          size={size * 0.45}
+        />
+      </View>
+    );
+  }
+
+  const color = tone === "error" ? theme.coral : theme.toastMessage;
   return (
     <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        borderWidth: 2,
-        borderColor: theme.accent,
-        alignItems: "center",
-        justifyContent: "center",
-      }}
+      style={[
+        styles.badge,
+        {
+          width: size,
+          height: size,
+          borderRadius: size / 2,
+          borderWidth: 2,
+          borderColor: color,
+        },
+      ]}
     >
       <SymbolView
-        name={{ ios: "checkmark", android: "check", web: "check" }}
-        tintColor={theme.accent}
-        size={size * 0.5}
+        name={
+          tone === "error"
+            ? {
+                ios: "exclamationmark",
+                android: "priority_high",
+                web: "priority_high",
+              }
+            : { ios: "info", android: "info_i", web: "info_i" }
+        }
+        tintColor={color}
+        weight="bold"
+        size={size * 0.45}
       />
     </View>
   );
@@ -130,6 +180,13 @@ function ToastView({
   const { width } = useWindowDimensions();
 
   const variant = toast.variant ?? (toast.title ? "card" : "pill");
+  const tone = toast.tone ?? (variant === "card" ? "success" : "info");
+  // Success pills use a green surface; everything else keeps the dark one.
+  const surface =
+    tone === "success" && variant === "pill"
+      ? theme.toastSuccess
+      : theme.toastSurface;
+  const messageColor = tone === "info" ? theme.toastMessage : theme.toastTitle;
   const position = toast.position ?? (variant === "card" ? "center" : "top");
 
   const offset = position === "top" ? -16 : position === "bottom" ? 16 : 0;
@@ -143,7 +200,7 @@ function ToastView({
   });
 
   const glow = {
-    backgroundColor: theme.toastSurface,
+    backgroundColor: surface,
     shadowColor: theme.toastGlow,
     shadowOpacity: 0.5,
     shadowRadius: 14,
@@ -184,7 +241,7 @@ function ToastView({
                 { width: Math.min(322, width - Spacing.four * 2) },
               ]}
             >
-              <CheckBadge size={36} />
+              <ToastBadge tone={tone} size={36} />
               {toast.title && (
                 <Text style={[styles.title, { color: theme.toastTitle }]}>
                   {toast.title}
@@ -208,9 +265,9 @@ function ToastView({
                 { width: width - (Spacing.four - Spacing.one) * 2 },
               ]}
             >
-              <CheckBadge size={32} />
+              <ToastBadge tone={tone} size={32} />
               <Text
-                style={[styles.message, { color: theme.toastMessage }]}
+                style={[styles.message, { color: messageColor }]}
                 numberOfLines={2}
               >
                 {toast.message}
@@ -224,6 +281,10 @@ function ToastView({
 }
 
 const styles = StyleSheet.create({
+  badge: {
+    alignItems: "center",
+    justifyContent: "center",
+  },
   overlay: {
     position: "absolute",
     top: 0,
