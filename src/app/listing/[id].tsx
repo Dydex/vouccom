@@ -2,8 +2,17 @@ import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SymbolView, type SymbolViewProps } from "expo-symbols";
-import { useState } from "react";
-import { FlatList, Pressable, ScrollView, Share, StyleSheet, useWindowDimensions, View } from "react-native";
+import { useEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  ScrollView,
+  Share,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -25,6 +34,8 @@ import {
   type Listing,
 } from "@/data/listings";
 import { useTheme } from "@/hooks/use-theme";
+import { ApiError, getListing } from "@/lib/api";
+import { toListing } from "@/lib/listings";
 
 const SIDE = 20;
 const MAX_QUANTITY = 100;
@@ -44,23 +55,85 @@ function goBack() {
 
 export default function ListingDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const listing = findListing(id);
+  // Home still shows sample listings; everything else comes from the API.
+  const sample = findListing(id);
 
-  if (!listing) return <NotFound />;
-  return <ListingDetails listing={listing} />;
+  const [listing, setListing] = useState<Listing | null>(sample ?? null);
+  const [error, setError] = useState<ApiError | null>(null);
+  const [attempt, setAttempt] = useState(0);
+
+  useEffect(() => {
+    if (sample) return;
+    let cancelled = false;
+    setError(null);
+    getListing(id)
+      .then(({ listing }) => {
+        if (!cancelled) setListing(toListing(listing));
+      })
+      .catch((e) => {
+        if (!cancelled) setError(e instanceof ApiError ? e : null);
+      });
+    // Ignore the answer if the user has already left this screen.
+    return () => {
+      cancelled = true;
+    };
+  }, [id, sample, attempt]);
+
+  if (listing) return <ListingDetails listing={listing} />;
+
+  return (
+    <Placeholder
+      loading={!error}
+      message={
+        error?.status === 404
+          ? "This listing is no longer available."
+          : (error?.message ?? "")
+      }
+      onRetry={
+        error && error.status !== 404
+          ? () => setAttempt((n) => n + 1)
+          : undefined
+      }
+    />
+  );
 }
 
-function NotFound() {
+function Placeholder({
+  loading,
+  message,
+  onRetry,
+}: {
+  loading: boolean;
+  message: string;
+  onRetry?: () => void;
+}) {
   const theme = useTheme();
 
   return (
     <View style={[styles.center, { backgroundColor: theme.background }]}>
-      <Text style={[styles.notFound, { color: theme.textSecondary }]}>
-        This listing is no longer available.
-      </Text>
-      <Pressable accessibilityRole="button" onPress={goBack} hitSlop={12}>
-        <Text style={{ color: theme.brand, fontSize: 14 }}>Go back</Text>
-      </Pressable>
+      {loading ? (
+        <ActivityIndicator size="large" color={theme.brand} />
+      ) : (
+        <>
+          <Text style={[styles.notFound, { color: theme.textSecondary }]}>
+            {message}
+          </Text>
+          {onRetry && (
+            <Pressable
+              accessibilityRole="button"
+              onPress={onRetry}
+              hitSlop={12}
+            >
+              <Text style={{ color: theme.brand, fontSize: 14 }}>
+                Try again
+              </Text>
+            </Pressable>
+          )}
+          <Pressable accessibilityRole="button" onPress={goBack} hitSlop={12}>
+            <Text style={{ color: theme.brand, fontSize: 14 }}>Go back</Text>
+          </Pressable>
+        </>
+      )}
     </View>
   );
 }

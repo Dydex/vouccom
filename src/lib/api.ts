@@ -252,3 +252,71 @@ export function getMe(options: { timeoutMs?: number } = {}) {
 export function logout() {
   return request<{ ok: boolean }>("/auth/logout", { method: "POST" });
 }
+
+// --- Listings ---
+
+/** A listing as the API sends it (the `Listing` schema). */
+export type ApiListing = {
+  id: string;
+  title: string;
+  condition: "brand_new" | "foreign_used" | "nigerian_used";
+  year: number;
+  mileageKm: number | null;
+  transmission: "automatic" | "manual" | null;
+  fuelType: "petrol" | "diesel" | "hybrid" | "electric" | null;
+  colour: string | null;
+  bodyType:
+    | "sedan"
+    | "suv"
+    | "pickup"
+    | "hatchback"
+    | "coupe"
+    | "wagon"
+    | "van"
+    | "bus"
+    | null;
+  locationState: string | null;
+  engine: string | null;
+  driveType: string | null;
+  interiorColour: string | null;
+  /** Image URLs. */
+  images: string[];
+  voucherPriceNaira: number;
+  estimatedValueNaira: number;
+  /** Null means no cap. */
+  totalVouchers: number | null;
+  soldCount: number;
+  /** ISO date-time. */
+  drawDate: string;
+  status: "draft" | "live" | "closed" | "cancelled";
+  badges: ("verified" | "inspected" | "secure" | "popular")[];
+  featured: boolean;
+  whatsIncluded: string[];
+  conditionExterior: string | null;
+  conditionInterior: string | null;
+  conditionMechanical: string | null;
+  description: string;
+  /** ISO date-time. */
+  createdAt: string;
+  /** Only on GET /listings/{id}, and only meaningful when signed in. */
+  savedByMe?: boolean;
+};
+
+export type ListingsPage = {
+  listings: ApiListing[];
+  total: number;
+  page: number;
+  pages: number;
+};
+
+/** Live listings, soonest draw first. */
+export function getListings(page = 1, limit = 24) {
+  return request<ListingsPage>(`/listings?page=${page}&limit=${limit}`);
+}
+
+/** 404 for draft, cancelled or not-yet-open listings. */
+export function getListing(id: string) {
+  return request<{ listing: ApiListing }>(
+    `/listings/${encodeURIComponent(id)}`,
+  );
+}

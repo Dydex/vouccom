@@ -1,6 +1,14 @@
 import { SymbolView } from "expo-symbols";
 import { useMemo, useState } from "react";
-import { FlatList, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -12,9 +20,11 @@ import { FiltersSheet } from "@/components/filters-sheet";
 import { FilterButton, SearchField } from "@/components/list-controls";
 import { ListHeader } from "@/components/list-header";
 import { ListingCard } from "@/components/listing-card";
+import { useToast } from "@/components/toast";
 import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
-import { DEFAULT_FILTERS, matchesFilters } from "@/data/filters";
-import { ALL_LISTINGS, type Listing } from "@/data/listings";
+import { DEFAULT_FILTERS, matchesFilters, rangeFor } from "@/data/filters";
+import type { Listing } from "@/data/listings";
+import { useListings } from "@/hooks/use-listings";
 import { useTheme } from "@/hooks/use-theme";
 
 const SIDE = 20;
@@ -30,7 +40,7 @@ const SORT_OPTIONS: FilterOption<Sort>[] = [
 ];
 
 const SORTERS: Record<Sort, ((a: Listing, b: Listing) => number) | null> = {
-  default: null, 
+  default: null, // keep the API order: soonest draw first
   newest: (a, b) => a.listedDaysAgo - b.listedDaysAgo,
   closing: (a, b) => a.daysLeft - b.daysLeft,
   price: (a, b) => a.voucherPrice - b.voucherPrice,
@@ -45,16 +55,47 @@ export default function ListingsScreen() {
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
 
+  const toast = useToast();
+  const {
+    listings: loaded,
+    status,
+    error,
+    refreshing,
+    loadingMore,
+    refresh,
+    retry,
+    loadMore,
+  } = useListings();
+
+  // Search, sort and filters run on the listings loaded so far: the API has no
+  // parameters for them yet.
+  const searching = query.trim() !== "" || filters !== DEFAULT_FILTERS;
   const listings = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const result = ALL_LISTINGS.filter(
+    const result = loaded.filter(
       (l) =>
         (!q || l.title.toLowerCase().includes(q)) && matchesFilters(l, filters),
     );
     const sorter = SORTERS[sort];
     const sorted = sorter ? [...result].sort(sorter) : result;
     return sorted.length % 2 ? [...sorted, null] : sorted;
-  }, [query, sort, filters]);
+  }, [loaded, query, sort, filters]);
+
+  // The value slider spans the cheapest to the most valuable listing loaded.
+  const assetBounds = useMemo(
+    () => rangeFor(loaded.map((l) => l.assetValue)),
+    [loaded],
+  );
+
+  const onRefresh = async () => {
+    const ok = await refresh();
+    if (!ok) {
+      toast.show({
+        tone: "error",
+        message: "Couldn't refresh the listings. Pull to try again.",
+      });
+    }
+  };
 
   const removeBrand = (brand: string) =>
     setFilters((f) => ({ ...f, brands: f.brands.filter((b) => b !== brand) }));
@@ -81,6 +122,20 @@ export default function ListingsScreen() {
         columnWrapperStyle={styles.row}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.brand}
+          />
+        }
+        onEndReached={loadMore}
+        onEndReachedThreshold={0.5}
+        ListFooterComponent={
+          loadingMore ? (
+            <ActivityIndicator style={styles.footer} color={theme.brand} />
+          ) : undefined
+        }
         contentContainerStyle={[
           styles.listContent,
           {
@@ -136,9 +191,38 @@ export default function ListingsScreen() {
           </View>
         }
         ListEmptyComponent={
-          <Text style={[styles.empty, { color: theme.textSecondary }]}>
-            No listings found
-          </Text>
+          status === "loading" ? (
+            <ActivityIndicator
+              style={styles.loading}
+              size="large"
+              color={theme.brand}
+            />
+          ) : status === "error" ? (
+            <View style={styles.errorBox}>
+              <Text style={[styles.empty, { color: theme.textSecondary }]}>
+                {error?.message ?? "Couldn't load the listings."}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={retry}
+                style={({ pressed }) => [
+                  styles.retry,
+                  { backgroundColor: theme.brand },
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text style={[styles.retryText, { color: theme.onBrand }]}>
+                  Try again
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Text style={[styles.empty, { color: theme.textSecondary }]}>
+              {searching
+                ? "No listings match your search."
+                : "No listings yet."}
+            </Text>
+          )
         }
         renderItem={({ item }) =>
           item ? (
@@ -150,6 +234,7 @@ export default function ListingsScreen() {
       />
 
       <FiltersSheet
+        assetBounds={assetBounds}
         visible={filtersOpen}
         filters={filters}
         onApply={setFilters}
@@ -195,6 +280,30 @@ const styles = StyleSheet.create({
   },
   spacer: {
     flex: 1,
+  },
+  loading: {
+    marginTop: Spacing.six,
+  },
+  footer: {
+    marginVertical: Spacing.four,
+  },
+  errorBox: {
+    alignItems: "center",
+    gap: Spacing.three,
+  },
+  retry: {
+    height: 40,
+    paddingHorizontal: Spacing.four,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: "600",
+  },
+  pressed: {
+    opacity: 0.85,
   },
   empty: {
     marginTop: Spacing.five,

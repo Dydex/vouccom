@@ -19,14 +19,14 @@ export type Listing = {
   badge: ListingBadge;
   /** Text shown inside the badge */
   badgeLabel: string;
-  /** Result of require("...png") */
-  image: number;
+  /** require("...png") for bundled images, or a URL from the API. */
+  image: number | string;
   // Optional details for the listing screen (fall back to sensible defaults).
   /** Full name shown on the details screen, e.g. "Foreign Used 2026 Honda Civic". */
   detailTitle?: string;
   description?: string;
   /** Gallery images; defaults to just `image`. */
-  images?: number[];
+  images?: (number | string)[];
   /** The signed-in user's entries in this draw, if any. */
   userEntries?: { count: number; daysAgo: number };
   /** Text for the Description pop-up; defaults to a generic version. */
