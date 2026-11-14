@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import { useRouter } from "expo-router";
+import { useLocalSearchParams, useRouter } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
@@ -17,7 +17,8 @@ export default function Login() {
   const router = useRouter();
   const theme = useTheme();
 
-  const [email, setEmail] = useState("");
+  const params = useLocalSearchParams<{ email?: string }>();
+  const [email, setEmail] = useState(params.email ?? "");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -27,7 +28,7 @@ export default function Login() {
 
   const handleLogIn = async () => {
     if (!email.trim() || !password) {
-      toast.show({ message: "Enter your email and password." });
+      toast.show({ tone: "error", message: "Enter your email and password." });
       return;
     }
 
@@ -36,8 +37,8 @@ export default function Login() {
       await signIn(email.trim(), password, rememberMe);
       router.replace("/home");
     } catch (error) {
-      // The server's message is safe to show, e.g. "Invalid email or password".
       toast.show({
+        tone: "error",
         message:
           error instanceof ApiError
             ? error.message

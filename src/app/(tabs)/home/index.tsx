@@ -16,6 +16,7 @@ import { DrawRow } from "@/components/draw-row";
 import { EntryRow } from "@/components/entry-row";
 import { ListingCard } from "@/components/listing-card";
 import { SectionBar } from "@/components/section-bar";
+import { VerifyEmailBanner } from "@/components/verify-email-banner";
 import { formatNaira } from "@/constants/currency";
 import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
 import { ACTIVITY, DRAWS } from "@/data/draws";
@@ -34,7 +35,7 @@ export default function HomeScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
   const { user } = useAuth();
-  // From the API when we have it; the sample name otherwise (e.g. offline).
+  // Falls back to sample data until the user has loaded.
   const firstName = user?.profile.firstName ?? USER.firstName;
 
   return (
@@ -118,6 +119,8 @@ export default function HomeScreen() {
             FloatingTabBarHeight + Math.max(insets.bottom, 12) + Spacing.five,
         }}
       >
+        <VerifyEmailBanner />
+
         {/* Featured */}
         <Text style={[styles.sectionTitle, { color: theme.text }]}>
           Featured

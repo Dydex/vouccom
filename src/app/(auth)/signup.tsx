@@ -9,8 +9,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { DEFAULT_COUNTRY, type Country } from "@/components/country-picker";
 import { PasswordField } from "@/components/password-field";
 import { PhoneField } from "@/components/phone-field";
+import { useToast } from "@/components/toast";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+import { ApiError, signup } from "@/lib/api";
 
 export default function Signup() {
   const router = useRouter();
@@ -24,6 +26,76 @@ export default function Signup() {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
   const [agreed, setAgreed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const toast = useToast();
+
+  const handleSignUp = async () => {
+    const missing =
+      !firstName.trim() ||
+      !lastName.trim() ||
+      !email.trim() ||
+      !phone.trim() ||
+      !password ||
+      !confirmPassword;
+    if (missing) {
+      toast.show({ tone: "error", message: "Please fill in every field." });
+      return;
+    }
+    if (password.length < 8) {
+      toast.show({
+        tone: "error",
+        message: "Your password needs at least 8 characters.",
+      });
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.show({ tone: "error", message: "The two passwords don't match." });
+      return;
+    }
+    if (!agreed) {
+      toast.show({
+        tone: "error",
+        message: "Please accept the Terms & Conditions.",
+      });
+      return;
+    }
+
+    // The API expects digits without the leading 0, e.g. "8031234567".
+    // TODO: confirm the format for non-Nigerian numbers with the backend.
+    const phoneDigits = phone.replace(/\D/g, "").replace(/^0/, "");
+
+    setSubmitting(true);
+    try {
+      await signup({
+        firstName: firstName.trim(),
+        lastName: lastName.trim(),
+        email: email.trim(),
+        phone: phoneDigits,
+        password,
+        confirmPassword,
+        acceptTerms: true,
+      });
+      router.push({
+        pathname: "/verifyEmail",
+        params: { email: email.trim(), from: "signup" },
+      });
+    } catch (error) {
+      if (error instanceof ApiError) {
+        if (error.code === "VALIDATION_FAILED") {
+          console.log("Sign-up validation details:", error.details);
+        }
+        toast.show({ tone: "error", message: error.message });
+      } else {
+        toast.show({
+          tone: "error",
+          message: "Couldn't create your account. Please try again.",
+        });
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   const fieldStyle = [
     styles.input,
@@ -136,15 +208,17 @@ export default function Signup() {
 
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.replace("/home")}
+          accessibilityState={{ busy: submitting, disabled: submitting }}
+          disabled={submitting}
+          onPress={handleSignUp}
           style={({ pressed }) => [
             styles.submit,
             { backgroundColor: theme.brand },
-            pressed && styles.pressed,
+            (pressed || submitting) && styles.pressed,
           ]}
         >
           <Text style={[styles.submitText, { color: theme.onBrand }]}>
-            Get Started
+            {submitting ? "Creating account..." : "Get Started"}
           </Text>
         </Pressable>
 
@@ -235,7 +309,7 @@ const styles = StyleSheet.create({
   },
   backArrow: {
     width: 18,
-    height: 14, 
+    height: 14,
   },
   title: {
     fontSize: 26,

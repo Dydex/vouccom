@@ -1,45 +1,23 @@
-// Everything the app needs to talk to the Vouccom backend.
-// See the API docs at https://vouccom.com/api/docs
+// Vouccom API client. Docs: https://vouccom.com/api/docs
 
-// ---------------------------------------------------------------------------
-// Where the server is
-// ---------------------------------------------------------------------------
-
-/** Base address of the API. Set in .env; the fallback keeps the app working without it. */
 export const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
-/** Give up on a request after this long, so the app never waits forever. */
 const TIMEOUT_MS = 20_000;
 
-// ---------------------------------------------------------------------------
-// The sign-in token
-// ---------------------------------------------------------------------------
-
-// Held in memory for now. Step 4 (sign-in) will also save it securely on the phone.
 let authToken: string | null = null;
 
-/** Remember the token from POST /auth/login, or pass null when signing out. */
 export function setAuthToken(token: string | null) {
   authToken = token;
 }
 
-// ---------------------------------------------------------------------------
-// Errors
-// ---------------------------------------------------------------------------
-
-/**
- * Thrown for every failed request. `message` is safe to show the user.
- * `code` lets the app react to specific cases, e.g. "INSUFFICIENT_FUNDS".
- */
+/** Thrown for every failed request. `message` is safe to show to the user. */
 export class ApiError extends Error {
   code: string;
-  /** HTTP status, or 0 when the server couldn't be reached at all. */
+  /** 0 when there was no response (offline or timed out). */
   status: number;
-  /** Quote this when reporting a problem to the backend team. */
   requestId?: string;
-  /** Field-by-field problems, sent with VALIDATION_FAILED. */
   details?: unknown;
-  /** For 429 (rate limited): seconds to wait before trying again. */
+  /** Seconds, from the Retry-After header on 429. */
   retryAfter?: number;
 
   constructor(
@@ -62,37 +40,25 @@ export class ApiError extends Error {
   }
 }
 
-// ---------------------------------------------------------------------------
-// The one function every API call goes through
-// ---------------------------------------------------------------------------
-
 type RequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
-  /** Sent as JSON. */
   body?: unknown;
-  /** Give up after this many milliseconds. Defaults to TIMEOUT_MS. */
   timeoutMs?: number;
 };
 
-/**
- * Calls the API and returns the JSON reply, typed as T.
- * Throws an ApiError when anything goes wrong.
- *
- *   const { user } = await request<{ user: User }>("/auth/me");
- */
+/** Calls the API and returns the parsed JSON. Throws ApiError on failure. */
 export async function request<T>(
   path: string,
   { method = "GET", body, timeoutMs = TIMEOUT_MS }: RequestOptions = {},
 ): Promise<T> {
   const headers: Record<string, string> = {
     Accept: "application/json",
-    // Tells the server we're the mobile app, so login returns a token.
+    // Required for /auth/login to return a token instead of a cookie.
     "X-Client-Type": "mobile",
   };
   if (body !== undefined) headers["Content-Type"] = "application/json";
   if (authToken) headers.Authorization = `Bearer ${authToken}`;
 
-  // Cancel the request if it takes too long.
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), timeoutMs);
 
@@ -105,7 +71,6 @@ export async function request<T>(
       signal: controller.signal,
     });
   } catch {
-    // No reply at all: offline, the server is down, or we gave up waiting.
     throw new ApiError(
       controller.signal.aborted
         ? "The server took too long to answer. Please try again."
@@ -119,7 +84,7 @@ export async function request<T>(
     clearTimeout(timer);
   }
 
-  // Some replies have no body (e.g. 204 No Content).
+  // Read as text first: some responses have an empty body.
   const text = await response.text();
   const data = text ? safeJsonParse(text) : undefined;
 
@@ -127,7 +92,10 @@ export async function request<T>(
     const error = (data as { error?: Partial<ErrorBody> } | undefined)?.error;
     const retryAfter = Number(response.headers.get("Retry-After"));
     throw new ApiError(
-      error?.message ?? `Something went wrong (status ${response.status}).`,
+      // VALIDATION_FAILED only says "Invalid request"; the field message is more useful.
+      firstFieldMessage(error?.details) ??
+        error?.message ??
+        `Something went wrong (status ${response.status}).`,
       {
         code: error?.code ?? "HTTP_ERROR",
         status: response.status,
@@ -144,13 +112,24 @@ export async function request<T>(
   return data as T;
 }
 
-/** The shape of every error reply, from the API docs. */
 type ErrorBody = {
   code: string;
   message: string;
   requestId: string;
   details?: unknown;
 };
+
+/** An entry of `details` in a VALIDATION_FAILED response. */
+export type FieldIssue = {
+  path: (string | number)[];
+  message: string;
+};
+
+function firstFieldMessage(details: unknown): string | undefined {
+  if (!Array.isArray(details)) return undefined;
+  const first = details[0] as Partial<FieldIssue> | undefined;
+  return typeof first?.message === "string" ? first.message : undefined;
+}
 
 function safeJsonParse(text: string): unknown {
   try {
@@ -160,9 +139,7 @@ function safeJsonParse(text: string): unknown {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Endpoints
-// ---------------------------------------------------------------------------
+// --- Endpoints ---
 
 export type Health = {
   status: string;
@@ -170,19 +147,16 @@ export type Health = {
   db: string;
 };
 
-/** GET /health: is the server up and connected to its database? */
 export function checkHealth() {
   return request<Health>("/health");
 }
 
-// ---------------------------------------------------------------------------
-// Auth
-// ---------------------------------------------------------------------------
+// --- Auth ---
 
 export type KycStatus =
   "unverified" | "pending" | "verified" | "rejected" | "resubmit_required";
 
-/** The signed-in user, as the API describes it (the `User` schema). */
+/** Subset of the API's `User` schema. */
 export type User = {
   id: string;
   email: string;
@@ -202,7 +176,6 @@ export type User = {
   kyc?: { status: KycStatus };
 };
 
-/** POST /auth/login. The token only comes back because we send X-Client-Type: mobile. */
 export function login(email: string, password: string) {
   return request<{ user: User; token?: string }>("/auth/login", {
     method: "POST",
@@ -210,12 +183,44 @@ export function login(email: string, password: string) {
   });
 }
 
-/** GET /auth/me: who does the current token belong to? */
+export type SignupInput = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  /** Digits only, no leading 0, e.g. "8031234567". */
+  phone: string;
+  password: string;
+  confirmPassword: string;
+  acceptTerms: true;
+};
+
+/** Creates the account without a session; the email must be verified before login. */
+export function signup(input: SignupInput) {
+  return request<{ user: User; next?: string }>("/auth/signup", {
+    method: "POST",
+    body: input,
+  });
+}
+
+/** Rate limited to 5 per hour per email. */
+export function requestEmailCode(email: string) {
+  return request<{ sent: boolean }>("/auth/verify/email/request", {
+    method: "POST",
+    body: { email },
+  });
+}
+
+export function verifyEmail(email: string, code: string) {
+  return request<unknown>("/auth/verify/email", {
+    method: "POST",
+    body: { email, code },
+  });
+}
+
 export function getMe(options: { timeoutMs?: number } = {}) {
   return request<{ user: User }>("/auth/me", options);
 }
 
-/** POST /auth/logout: ends this session on the server. Safe to call when signed out. */
 export function logout() {
   return request<{ ok: boolean }>("/auth/logout", { method: "POST" });
 }
