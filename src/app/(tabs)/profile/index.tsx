@@ -11,6 +11,7 @@ import { PhoneIcon } from "@/components/phone-icon";
 import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
 import { USER } from "@/data/user";
 import { useTheme } from "@/hooks/use-theme";
+import { useAuth } from "@/state/auth";
 
 const SIDE = 20;
 
@@ -144,20 +145,27 @@ function RowImage({ source, color }: { source: number; color: string }) {
   );
 }
 
-function confirmLogOut() {
+function confirmLogOut(signOut: () => Promise<void>) {
   Alert.alert("Log out", "Are you sure you want to log out?", [
     { text: "Cancel", style: "cancel" },
     {
       text: "Log out",
       style: "destructive",
-      // TODO: clear the saved session once the app has one.
-      onPress: () => router.replace("/login"),
+      // Signing out makes the protected screens unavailable, so the router
+      // sends us to the login screen by itself.
+      onPress: () => signOut(),
     },
   ]);
 }
 
 export default function ProfileScreen() {
   const theme = useTheme();
+  const { user, signOut } = useAuth();
+  // From the API when we have it; the sample name otherwise (e.g. offline).
+  const firstName = user?.profile.firstName ?? USER.firstName;
+  const fullName = user
+    ? `${user.profile.firstName} ${user.profile.lastName}`
+    : USER.fullName;
   const insets = useSafeAreaInsets();
 
   const onPress = (id: string) => {
@@ -169,7 +177,7 @@ export default function ProfileScreen() {
     if (id === "help") router.push("/profile/help");
     if (id === "contact") router.push("/profile/contact");
     if (id === "legal") router.push("/profile/legal");
-    if (id === "logout") confirmLogOut();
+    if (id === "logout") confirmLogOut(signOut);
     // TODO: every other row needs its own screen.
   };
 
@@ -188,7 +196,7 @@ export default function ProfileScreen() {
           <View>
             {/* TODO: show the user's photo once it comes from the backend. */}
             <View style={[styles.avatar, { backgroundColor: theme.coral }]}>
-              <Text style={styles.avatarText}>{USER.firstName[0]}</Text>
+              <Text style={styles.avatarText}>{firstName[0]}</Text>
             </View>
             <Pressable
               accessibilityRole="button"
@@ -204,9 +212,7 @@ export default function ProfileScreen() {
             </Pressable>
           </View>
 
-          <Text style={[styles.name, { color: theme.text }]}>
-            {USER.fullName}
-          </Text>
+          <Text style={[styles.name, { color: theme.text }]}>{fullName}</Text>
           {USER.verified && (
             <View
               style={[styles.chip, { backgroundColor: `${theme.moneyIn}26` }]}
@@ -386,7 +392,7 @@ const styles = StyleSheet.create({
   },
   forward: {
     width: 20,
-    height: 20, 
+    height: 20,
   },
   footer: {
     alignItems: "center",

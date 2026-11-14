@@ -7,8 +7,11 @@ import { Text, TextInput } from "@/components/text";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { PasswordField } from "@/components/password-field";
+import { useToast } from "@/components/toast";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
+import { ApiError } from "@/lib/api";
+import { useAuth } from "@/state/auth";
 
 export default function Login() {
   const router = useRouter();
@@ -17,6 +20,33 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [rememberMe, setRememberMe] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+
+  const { signIn } = useAuth();
+  const toast = useToast();
+
+  const handleLogIn = async () => {
+    if (!email.trim() || !password) {
+      toast.show({ message: "Enter your email and password." });
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      await signIn(email.trim(), password, rememberMe);
+      router.replace("/home");
+    } catch (error) {
+      // The server's message is safe to show, e.g. "Invalid email or password".
+      toast.show({
+        message:
+          error instanceof ApiError
+            ? error.message
+            : "Couldn't sign in. Please try again.",
+      });
+    } finally {
+      setSubmitting(false);
+    }
+  };
 
   return (
     <SafeAreaView
@@ -110,15 +140,17 @@ export default function Login() {
 
         <Pressable
           accessibilityRole="button"
-          onPress={() => router.replace("/home")}
+          accessibilityState={{ busy: submitting, disabled: submitting }}
+          disabled={submitting}
+          onPress={handleLogIn}
           style={({ pressed }) => [
             styles.loginButton,
             { backgroundColor: theme.brand },
-            pressed && styles.pressed,
+            (pressed || submitting) && styles.pressed,
           ]}
         >
           <Text style={[styles.loginText, { color: theme.onBrand }]}>
-            Log In
+            {submitting ? "Logging in..." : "Log In"}
           </Text>
         </Pressable>
 
@@ -209,7 +241,7 @@ const styles = StyleSheet.create({
   },
   backArrow: {
     width: 18,
-    height: 14, 
+    height: 14,
   },
   title: {
     fontSize: 26,

@@ -1,8 +1,8 @@
-import { DarkTheme, DefaultTheme, ThemeProvider, Stack } from 'expo-router';
-import { useFonts } from 'expo-font';
-import { StatusBar } from 'expo-status-bar';
-import * as SplashScreen from 'expo-splash-screen';
-import { useColorScheme } from 'react-native';
+import { DarkTheme, DefaultTheme, ThemeProvider, Stack } from "expo-router";
+import { useFonts } from "expo-font";
+import { StatusBar } from "expo-status-bar";
+import * as SplashScreen from "expo-splash-screen";
+import { useColorScheme } from "react-native";
 
 import {
   SpaceGrotesk_300Light,
@@ -10,11 +10,12 @@ import {
   SpaceGrotesk_500Medium,
   SpaceGrotesk_600SemiBold,
   SpaceGrotesk_700Bold,
-} from '@expo-google-fonts/space-grotesk';
+} from "@expo-google-fonts/space-grotesk";
 
-import { AnimatedSplashOverlay } from '@/components/animated-icon';
-import { FONT_FILES } from '@/components/text';
-import { ToastProvider } from '@/components/toast';
+import { AnimatedSplashOverlay } from "@/components/animated-icon";
+import { FONT_FILES } from "@/components/text";
+import { ToastProvider } from "@/components/toast";
+import { AuthProvider, useAuth } from "@/state/auth";
 
 SplashScreen.preventAutoHideAsync();
 
@@ -33,18 +34,39 @@ export default function RootLayout() {
   if (!fontsLoaded && !fontError) return null;
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <ThemeProvider value={colorScheme === "dark" ? DarkTheme : DefaultTheme}>
       {/* Light icons on dark screens, dark icons on light ones. Screens with a
           coloured band set their own. */}
       <StatusBar style="auto" />
-      <ToastProvider>
-        <AnimatedSplashOverlay />
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(onboarding)" />
-          <Stack.Screen name="(auth)" />
-          <Stack.Screen name="(tabs)" />
-        </Stack>
-      </ToastProvider>
+      <AuthProvider>
+        <ToastProvider>
+          <RootNavigator />
+        </ToastProvider>
+      </AuthProvider>
     </ThemeProvider>
+  );
+}
+
+function RootNavigator() {
+  const { status } = useAuth();
+
+  // Keep the splash screen up while we check for a saved session.
+  if (status === "restoring") return null;
+
+  return (
+    <>
+      <AnimatedSplashOverlay />
+      <Stack screenOptions={{ headerShown: false }}>
+        <Stack.Screen name="index" />
+        <Stack.Screen name="(onboarding)" />
+        <Stack.Screen name="(auth)" />
+        {/* Only for signed-in users. Signing out (or an expired session) sends
+            anyone on these screens to the login screen. */}
+        <Stack.Protected guard={status === "signedIn"} redirectTo="/login">
+          <Stack.Screen name="(tabs)" />
+          <Stack.Screen name="listing/[id]" />
+        </Stack.Protected>
+      </Stack>
+    </>
   );
 }

@@ -1,7 +1,13 @@
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { FlatList, Pressable, ScrollView, StyleSheet, View } from "react-native";
+import {
+  FlatList,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -18,8 +24,7 @@ import { USER } from "@/data/user";
 import { WALLET_BALANCE } from "@/data/wallet";
 import { BROWSE_LISTINGS, FEATURED_LISTINGS } from "@/data/listings";
 import { useTheme } from "@/hooks/use-theme";
-
-const USER_NAME = USER.firstName;
+import { useAuth } from "@/state/auth";
 
 const SIDE = 20;
 
@@ -28,6 +33,9 @@ const ACTIVE_ENTRIES = ENTRIES.filter((e) => e.status === "active").slice(0, 3);
 export default function HomeScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const { user } = useAuth();
+  // From the API when we have it; the sample name otherwise (e.g. offline).
+  const firstName = user?.profile.firstName ?? USER.firstName;
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -43,10 +51,10 @@ export default function HomeScreen() {
       >
         <View style={styles.greetingRow}>
           <View style={[styles.avatar, { backgroundColor: theme.coral }]}>
-            <Text style={styles.avatarText}>{USER_NAME[0]}</Text>
+            <Text style={styles.avatarText}>{firstName[0]}</Text>
           </View>
           <Text style={[styles.greeting, { color: theme.text }]}>
-            Hello {USER_NAME},
+            Hello {firstName},
           </Text>
 
           <Pressable

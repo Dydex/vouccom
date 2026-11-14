@@ -1,6 +1,9 @@
-import { Redirect } from 'expo-router';
+import { Redirect } from "expo-router";
 
-// App entry point: always land on the first onboarding screen.
+import { useAuth } from "@/state/auth";
+
+// App entry point: signed-in users go straight to Home, everyone else to onboarding.
 export default function Index() {
-  return <Redirect href="/page1" />;
+  const { status } = useAuth();
+  return <Redirect href={status === "signedIn" ? "/home" : "/page1"} />;
 }
