@@ -16,7 +16,8 @@ export type SavedCard = {
   isDefault?: boolean;
 };
 
-export type TransactionStatus = "successful" | "pending" | "failed";
+export type TransactionStatus =
+  "successful" | "pending" | "failed" | "refunded";
 
 export type Transaction = {
   id: string;
@@ -35,4 +36,6 @@ export type Transaction = {
   reference: string;
   /** e.g. "01 Sep 2026, 10:42 AM" */
   dateTime: string;
+  /** Ticket numbers bought, e.g. "#101 - #105". */
+  tickets?: string;
 };

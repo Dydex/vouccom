@@ -16,6 +16,7 @@ import {
 import { AnimatedSplashOverlay } from "@/components/animated-icon";
 import { FONT_FILES } from "@/components/text";
 import { ToastProvider } from "@/components/toast";
+import { usePushNotifications } from "@/hooks/use-push-notifications";
 import { queryClient } from "@/lib/query-client";
 import { AuthProvider, useAuth } from "@/state/auth";
 
@@ -50,6 +51,7 @@ export default function RootLayout() {
 
 function RootNavigator() {
   const { status } = useAuth();
+  usePushNotifications(status === "signedIn");
 
   if (status === "restoring") return null;
 

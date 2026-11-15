@@ -52,7 +52,7 @@ export function relativeTime(date: Date, now = new Date()) {
 }
 
 /** "01 Sep 2026, 10:42 AM" */
-function fullDateTime(date: Date) {
+export function fullDateTime(date: Date) {
   const day = String(date.getDate()).padStart(2, "0");
   return `${day} ${MONTHS[date.getMonth()]} ${date.getFullYear()}, ${clock(date)} ${date.getHours() < 12 ? "AM" : "PM"}`;
 }

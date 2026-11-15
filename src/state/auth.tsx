@@ -19,6 +19,7 @@ import {
   setAuthToken,
   type User,
 } from "@/lib/api";
+import { unregisterFromPush } from "@/lib/push";
 import { queryClient } from "@/lib/query-client";
 
 const TOKEN_KEY = "vouccom.session-token";
@@ -132,6 +133,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 
   const signOut = useCallback(async () => {
+    // Needs the session, so before logging out.
+    await unregisterFromPush();
     try {
       await logout(); // tell the server, so this token stops working
     } catch {

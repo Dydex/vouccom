@@ -10,6 +10,7 @@ import {
 import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { EntryDetailsSheet } from "@/components/entry-details-sheet";
 import { EntryRow } from "@/components/entry-row";
 import { type FilterOption } from "@/components/filter-dropdown";
 import { FiltersSheet } from "@/components/filters-sheet";
@@ -17,6 +18,7 @@ import { ListControls } from "@/components/list-controls";
 import { ListHeader } from "@/components/list-header";
 import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
 import { daysAgoRange, type DateFilter } from "@/data/date-filter";
+import type { Entry } from "@/data/entries";
 import { DEFAULT_FILTERS, matchesFilters } from "@/data/filters";
 import { useEntries } from "@/hooks/use-entries";
 import { useTheme } from "@/hooks/use-theme";
@@ -41,6 +43,8 @@ export default function EntriesScreen() {
   const [status, setStatus] = useState<StatusFilter>("all");
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [detailsEntry, setDetailsEntry] = useState<Entry>();
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
 
   const entriesQuery = useEntries();
@@ -141,7 +145,21 @@ export default function EntriesScreen() {
             </Text>
           )
         }
-        renderItem={({ item }) => <EntryRow entry={item} />}
+        renderItem={({ item }) => (
+          <EntryRow
+            entry={item}
+            onViewDetails={() => {
+              setDetailsEntry(item);
+              setDetailsOpen(true);
+            }}
+          />
+        )}
+      />
+
+      <EntryDetailsSheet
+        visible={detailsOpen}
+        onClose={() => setDetailsOpen(false)}
+        entry={detailsEntry}
       />
 
       <FiltersSheet

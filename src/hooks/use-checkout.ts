@@ -8,6 +8,7 @@ import { randomUUID } from "expo-crypto";
 import { useRef } from "react";
 
 import { entriesKey } from "@/hooks/use-entries";
+import { purchasesKey } from "@/hooks/use-purchases";
 import { cardsKey, walletKey } from "@/hooks/use-wallet";
 import {
   ApiError,
@@ -31,6 +32,7 @@ export function refreshAfterPurchase(queryClient: QueryClient) {
   queryClient.invalidateQueries({ queryKey: walletKey });
   queryClient.invalidateQueries({ queryKey: cardsKey });
   queryClient.invalidateQueries({ queryKey: entriesKey });
+  queryClient.invalidateQueries({ queryKey: purchasesKey });
   // Every listing's tickets and sold count.
   queryClient.invalidateQueries({ queryKey: ["listing"] });
 }

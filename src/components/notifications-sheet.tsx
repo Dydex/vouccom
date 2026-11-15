@@ -1,4 +1,3 @@
-import type { Href } from "expo-router";
 import { router } from "expo-router";
 import { SymbolView, type SymbolViewProps } from "expo-symbols";
 import { useEffect } from "react";
@@ -15,6 +14,7 @@ import {
 import { useTheme } from "@/hooks/use-theme";
 import type { ApiNotification, NotificationType } from "@/lib/api";
 import { timeAgo } from "@/lib/format";
+import { targetFor } from "@/lib/notifications";
 
 type Theme = ReturnType<typeof useTheme>;
 
@@ -53,27 +53,6 @@ function iconFor(
         name: { ios: "person", android: "person", web: "person" },
         color: theme.text,
       };
-  }
-}
-
-/** Where tapping a notification goes, if anywhere. */
-function targetFor(notification: ApiNotification): Href | undefined {
-  const listingId = notification.meta?.listingId;
-  switch (notification.type) {
-    case "listing_live":
-    case "draw_result":
-    case "voucher_purchased":
-      return listingId
-        ? { pathname: "/listing/[id]", params: { id: listingId } }
-        : "/listings";
-    case "wallet_funded":
-      return "/wallet";
-    case "prize_won":
-      return "/home/myWins";
-    case "kyc_verified":
-      return "/profile/identity";
-    default:
-      return undefined;
   }
 }
 

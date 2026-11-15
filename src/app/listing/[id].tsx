@@ -1,6 +1,7 @@
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
+import * as WebBrowser from "expo-web-browser";
 import { SymbolView, type SymbolViewProps } from "expo-symbols";
 import { useState } from "react";
 import {
@@ -606,21 +607,25 @@ function ListingDetails({ listing }: { listing: Listing }) {
       <DrawDetailsSheet
         visible={sheet === "draw"}
         onClose={() => setSheet(null)}
-        status={
-          winner
-            ? winner.isMe
-              ? "Completed · You won!"
-              : "Completed"
-            : drawStatus(listing)
-        }
+        status={winner ? "Completed" : drawStatus(listing)}
         winningEntry={winner ? `#${winner.ticketNumber}` : undefined}
         dateTime={formatDrawDateTime(listing.drawDate)}
         link={{
           label: "YouTube",
           url: winner?.drawVideoUrl ?? drawLinkUrl(listing),
         }}
-        // TODO: add the draw to the phone's calendar (needs expo-calendar).
-        actionLabel="Add to calendar"
+        {...(winner?.drawVideoUrl
+          ? {
+              actionLabel: "Watch live replay",
+              onAction: () =>
+                WebBrowser.openBrowserAsync(
+                  winner.drawVideoUrl as string,
+                ).catch(() => {}),
+            }
+          : {
+              // TODO: add the draw to the phone's calendar (needs expo-calendar).
+              actionLabel: "Add to calendar",
+            })}
       />
 
       <CheckoutSheet

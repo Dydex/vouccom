@@ -15,8 +15,4 @@ export const USER = {
   dateOfBirth: "January 1st 1990",
   dateOfBirthVerified: true,
   userId: "VCM0001110",
-  // Identity checks.
-  bvn: "verified" as VerificationStatus,
-  nin: "pending" as VerificationStatus,
-  governmentId: "failed" as VerificationStatus,
 };

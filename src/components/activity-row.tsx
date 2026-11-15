@@ -1,6 +1,6 @@
 import { Image } from "expo-image";
 import { SymbolView, type SymbolViewProps } from "expo-symbols";
-import { StyleSheet, View } from "react-native";
+import { Pressable, StyleSheet, View } from "react-native";
 import { Text } from "@/components/text";
 
 import { Spacing } from "@/constants/theme";
@@ -25,11 +25,26 @@ const SYMBOLS: Record<"saved", SymbolViewProps["name"]> = {
   saved: { ios: "bookmark", android: "bookmark", web: "bookmark" },
 };
 
-export function ActivityRow({ activity }: { activity: Activity }) {
+export function ActivityRow({
+  activity,
+  onPress,
+}: {
+  activity: Activity;
+  onPress?: () => void;
+}) {
   const theme = useTheme();
 
   return (
-    <View style={[styles.card, { backgroundColor: theme.card }]}>
+    <Pressable
+      accessibilityRole={onPress ? "button" : undefined}
+      disabled={!onPress}
+      onPress={onPress}
+      style={({ pressed }) => [
+        styles.card,
+        { backgroundColor: theme.card },
+        pressed && styles.pressed,
+      ]}
+    >
       <View style={[styles.icon, { backgroundColor: theme.activityIcon }]}>
         {activity.kind === "saved" ? (
           <SymbolView name={SYMBOLS.saved} tintColor={theme.text} size={18} />
@@ -59,11 +74,14 @@ export function ActivityRow({ activity }: { activity: Activity }) {
       <Text style={[styles.meta, { color: theme.textSecondary }]}>
         {activity.time}
       </Text>
-    </View>
+    </Pressable>
   );
 }
 
 const styles = StyleSheet.create({
+  pressed: {
+    opacity: 0.85,
+  },
   card: {
     minHeight: 56,
     borderRadius: 28,

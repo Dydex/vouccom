@@ -11,6 +11,7 @@ const STATUS_LABELS: Record<TransactionStatus, string> = {
   successful: "Successful",
   pending: "Pending",
   failed: "Failed",
+  refunded: "Refunded",
 };
 
 type TransactionSheetProps = {
@@ -32,6 +33,7 @@ export function TransactionSheet({
         successful: theme.moneyIn,
         pending: theme.badgeSoon,
         failed: theme.moneyOut,
+        refunded: theme.brand,
       }[tx.status]
     : theme.moneyIn;
 
@@ -73,6 +75,7 @@ export function TransactionSheet({
                     successful: `${statusColor}26`,
                     pending: theme.winRow,
                     failed: theme.moneyOutBg,
+                    refunded: theme.browseBar,
                   }[tx.status],
                 },
               ]}
@@ -94,6 +97,8 @@ export function TransactionSheet({
             <Field label="Date & Time" value={tx.dateTime} />
             <Field label="Transaction ID" value={tx.reference} />
           </View>
+
+          {tx.tickets && <Field label="Tickets" value={tx.tickets} />}
         </View>
       )}
     </BottomSheet>

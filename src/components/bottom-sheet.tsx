@@ -26,6 +26,8 @@ type BottomSheetProps = {
   footer?: ReactNode;
   /** Fill most of the screen instead of fitting the content. */
   tall?: boolean;
+  /** iOS only: called once the sheet has finished closing. */
+  onDismiss?: () => void;
 };
 
 /** Rounded sheet over a dimmed screen: title and close button, scrolling body, pinned footer. */
@@ -36,6 +38,7 @@ export function BottomSheet({
   children,
   footer,
   tall,
+  onDismiss,
 }: BottomSheetProps) {
   return (
     <Modal
@@ -44,6 +47,7 @@ export function BottomSheet({
       visible={visible}
       animationType="fade"
       onRequestClose={onClose}
+      onDismiss={onDismiss}
     >
       <SheetLayout onClose={onClose} title={title} footer={footer} tall={tall}>
         {children}
@@ -52,7 +56,7 @@ export function BottomSheet({
   );
 }
 
-type SheetLayoutProps = Omit<BottomSheetProps, "visible">;
+type SheetLayoutProps = Omit<BottomSheetProps, "visible" | "onDismiss">;
 
 /**
  * The sheet itself, without the Modal: for screens that are routes, such as

@@ -607,6 +607,146 @@ export function submitClaim(
   );
 }
 
+// --- Identity (KYC) ---
+
+export const NIGERIAN_STATES = [
+  "Abia",
+  "Adamawa",
+  "Akwa Ibom",
+  "Anambra",
+  "Bauchi",
+  "Bayelsa",
+  "Benue",
+  "Borno",
+  "Cross River",
+  "Delta",
+  "Ebonyi",
+  "Edo",
+  "Ekiti",
+  "Enugu",
+  "FCT",
+  "Gombe",
+  "Imo",
+  "Jigawa",
+  "Kaduna",
+  "Kano",
+  "Katsina",
+  "Kebbi",
+  "Kogi",
+  "Kwara",
+  "Lagos",
+  "Nasarawa",
+  "Niger",
+  "Ogun",
+  "Ondo",
+  "Osun",
+  "Oyo",
+  "Plateau",
+  "Rivers",
+  "Sokoto",
+  "Taraba",
+  "Yobe",
+  "Zamfara",
+] as const;
+
+export type NigerianState = (typeof NIGERIAN_STATES)[number];
+
+export type Kyc = {
+  status: KycStatus;
+  tier: 0 | 1 | 2 | 3;
+  verifiedAt: string | null;
+  /** Why the last attempt failed. */
+  rejectionReason: string | null;
+  legalName: { first: string; middle?: string; last: string } | null;
+  state?: NigerianState;
+};
+
+export function getKycStatus() {
+  return request<{ kyc: Kyc }>("/kyc/status");
+}
+
+/**
+ * Checks the NIN against the national register, matching the profile name and
+ * this date of birth (YYYY-MM-DD). A mismatch is still a 200, with
+ * `status: "rejected"` and a `reason` to show. Must be 18 or over.
+ */
+export function verifyNin(input: {
+  nin: string;
+  dateOfBirth: string;
+  state: NigerianState;
+}) {
+  return request<{
+    status: "verified" | "rejected";
+    reason?: string;
+    kyc: Kyc;
+  }>("/kyc/nin", { method: "POST", body: input });
+}
+
+// --- Purchases ---
+
+export type PurchaseKind = "entry" | "checkout";
+export type PurchaseStatus = "succeeded" | "pending" | "failed" | "refunded";
+
+/** One row of the purchase history. */
+export type ApiPurchase = {
+  id: string;
+  /** "entry" for one listing, "checkout" for a cart. */
+  kind: PurchaseKind;
+  date: string;
+  /** Listing title, or "N listings" for a multi-listing cart. */
+  asset: string;
+  qty: number;
+  amountKobo: number;
+  status: PurchaseStatus;
+  /** Set for a completed single-listing purchase. */
+  listingId: string | null;
+};
+
+export type PurchasesPage = {
+  purchases: ApiPurchase[];
+  total: number;
+  page: number;
+  pages: number;
+};
+
+export function getPurchases(page = 1, limit = 20) {
+  return request<PurchasesPage>(`/purchases/mine?page=${page}&limit=${limit}`);
+}
+
+/** A purchase's receipt. */
+export type ApiReceipt = {
+  id: string;
+  kind: PurchaseKind;
+  date: string;
+  status: PurchaseStatus;
+  amountKobo: number;
+  items: {
+    listingId: string;
+    title: string;
+    image: string | null;
+    quantity: number;
+    unitPriceNaira: number | null;
+    totalKobo: number | null;
+    /** Null until the purchase succeeds. */
+    ticketStart: number | null;
+    ticketEnd: number | null;
+    drawDate: string | null;
+  }[];
+  payment: {
+    method: "card" | "wallet";
+    cardLast4: string | null;
+    cardBrand: string | null;
+  };
+  reference: string;
+  refund: { amountKobo: number; reason: string | null } | null;
+};
+
+export function getPurchase(kind: PurchaseKind, id: string) {
+  return request<{ purchase: ApiReceipt }>(
+    `/purchases/mine/${kind}/${encodeURIComponent(id)}`,
+  );
+}
+
 // --- Notifications ---
 
 export type NotificationType =
@@ -653,6 +793,22 @@ export function markNotificationRead(id: string) {
 export function markAllNotificationsRead() {
   return request<{ ok: boolean }>("/notifications/read-all", {
     method: "POST",
+  });
+}
+
+/** Send after sign-in and on every app start. Safe to repeat. */
+export function registerPushDevice(token: string, platform: "ios" | "android") {
+  return request<{ ok: boolean }>("/notifications/devices", {
+    method: "POST",
+    body: { token, platform },
+  });
+}
+
+/** Call before signing out. */
+export function unregisterPushDevice(token: string) {
+  return request<{ ok: boolean }>("/notifications/devices/unregister", {
+    method: "POST",
+    body: { token },
   });
 }
 

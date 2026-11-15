@@ -1,14 +1,40 @@
 import { Image } from "expo-image";
+import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import type { ReactNode } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import { useState, type ReactNode } from "react";
+import {
+  ActivityIndicator,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { NinSheet } from "@/components/nin-sheet";
 import { PlainHeader } from "@/components/plain-header";
 import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
-import { USER, type VerificationStatus } from "@/data/user";
+import type { VerificationStatus } from "@/data/user";
+import { useKyc } from "@/hooks/use-kyc";
 import { useTheme } from "@/hooks/use-theme";
+import type { KycStatus } from "@/lib/api";
+
+/** The API's KYC state as one of the screen's badges; null = not started. */
+function badgeFor(status: KycStatus): VerificationStatus | null {
+  switch (status) {
+    case "verified":
+      return "verified";
+    case "pending":
+      return "pending";
+    case "rejected":
+    case "resubmit_required":
+      return "failed";
+    default:
+      return null;
+  }
+}
 
 /** Exported 4x icons (80x80), shown at 16x16 and tinted. */
 function Glyph({ source, color }: { source: number; color: string }) {
@@ -25,6 +51,23 @@ function Glyph({ source, color }: { source: number; color: string }) {
 export default function IdentityVerificationScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const kyc = useKyc();
+  const [ninOpen, setNinOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await kyc.refetch();
+    setRefreshing(false);
+  };
+
+  const ninBadge = kyc.data ? badgeFor(kyc.data.status) : null;
+  // Not started: straight to the form. Otherwise: the details page.
+  const openNin = !kyc.data
+    ? undefined
+    : ninBadge
+      ? () => router.push("/profile/nin")
+      : () => setNinOpen(true);
 
   const STATUS: Record<
     VerificationStatus,
@@ -51,7 +94,8 @@ export default function IdentityVerificationScreen() {
     id: string;
     label: string;
     icon: ReactNode;
-    status: VerificationStatus;
+    status: VerificationStatus | "start" | "loading" | "unavailable";
+    onPress?: () => void;
   }[] = [
     {
       id: "bvn",
@@ -63,7 +107,8 @@ export default function IdentityVerificationScreen() {
           size={16}
         />
       ),
-      status: USER.bvn,
+      // TODO: the API has no BVN check yet.
+      status: "unavailable",
     },
     {
       id: "nin",
@@ -74,7 +119,8 @@ export default function IdentityVerificationScreen() {
           color={theme.text}
         />
       ),
-      status: USER.nin,
+      status: kyc.isPending ? "loading" : (ninBadge ?? "start"),
+      onPress: openNin,
     },
     {
       id: "id",
@@ -85,7 +131,8 @@ export default function IdentityVerificationScreen() {
           color={theme.text}
         />
       ),
-      status: USER.governmentId,
+      // TODO: the API has no ID document check yet.
+      status: "unavailable",
     },
   ];
 
@@ -95,6 +142,13 @@ export default function IdentityVerificationScreen() {
 
       <ScrollView
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.brand}
+          />
+        }
         contentContainerStyle={[
           styles.content,
           {
@@ -105,19 +159,34 @@ export default function IdentityVerificationScreen() {
       >
         <View style={[styles.card, { backgroundColor: theme.card }]}>
           {rows.map((row, i) => {
-            const status = STATUS[row.status];
+            const badge =
+              row.status === "verified" ||
+              row.status === "pending" ||
+              row.status === "failed"
+                ? STATUS[row.status]
+                : null;
+            const label =
+              badge?.label ??
+              {
+                start: "Not verified",
+                loading: "Loading",
+                unavailable: "Not available yet",
+              }[row.status as "start" | "loading" | "unavailable"];
             return (
               <Pressable
                 key={row.id}
                 accessibilityRole="button"
-                accessibilityLabel={`${row.label}, ${status.label}`}
-                // TODO: each check needs its own verification flow.
+                accessibilityLabel={`${row.label}, ${label}`}
+                accessibilityState={{ disabled: !row.onPress }}
+                disabled={!row.onPress}
+                onPress={row.onPress}
                 style={({ pressed }) => [
                   styles.row,
                   i > 0 && {
                     borderTopWidth: StyleSheet.hairlineWidth,
                     borderTopColor: theme.chip,
                   },
+                  row.status === "unavailable" && styles.unavailable,
                   pressed && styles.pressed,
                 ]}
               >
@@ -125,18 +194,62 @@ export default function IdentityVerificationScreen() {
                 <Text style={[styles.label, { color: theme.text }]}>
                   {row.label}
                 </Text>
-                <Glyph source={status.source} color={status.color} />
-                <Image
-                  source={require("@/assets/images/common/Arrow Right.png")}
-                  style={styles.forward}
-                  contentFit="contain"
-                  tintColor={theme.text}
-                />
+                {badge ? (
+                  <Glyph source={badge.source} color={badge.color} />
+                ) : row.status === "loading" ? (
+                  <ActivityIndicator size="small" color={theme.brand} />
+                ) : (
+                  <Text
+                    style={[
+                      styles.note,
+                      {
+                        color:
+                          row.status === "start"
+                            ? theme.brand
+                            : theme.textSecondary,
+                      },
+                    ]}
+                  >
+                    {row.status === "start" ? "Verify" : "Soon"}
+                  </Text>
+                )}
+                {row.onPress && (
+                  <Image
+                    source={require("@/assets/images/common/Arrow Right.png")}
+                    style={styles.forward}
+                    contentFit="contain"
+                    tintColor={theme.text}
+                  />
+                )}
               </Pressable>
             );
           })}
         </View>
+
+        {kyc.isError && !kyc.data && (
+          <Pressable accessibilityRole="button" onPress={() => kyc.refetch()}>
+            <Text style={[styles.message, { color: theme.textSecondary }]}>
+              Couldn't load your verification status. Tap to try again.
+            </Text>
+          </Pressable>
+        )}
+        {kyc.data?.status === "verified" && kyc.data.legalName && (
+          <Text style={[styles.message, { color: theme.textSecondary }]}>
+            Verified as {kyc.data.legalName.first} {kyc.data.legalName.last}.
+          </Text>
+        )}
+        {kyc.data?.rejectionReason && ninBadge === "failed" && (
+          <Text style={[styles.message, { color: theme.coral }]}>
+            {kyc.data.rejectionReason}
+          </Text>
+        )}
       </ScrollView>
+
+      <NinSheet
+        visible={ninOpen}
+        onClose={() => setNinOpen(false)}
+        initialState={kyc.data?.state}
+      />
     </View>
   );
 }
@@ -161,6 +274,19 @@ const styles = StyleSheet.create({
   },
   pressed: {
     opacity: 0.7,
+  },
+  unavailable: {
+    opacity: 0.5,
+  },
+  note: {
+    fontSize: 12,
+    fontWeight: "500",
+  },
+  message: {
+    marginTop: Spacing.three,
+    fontSize: 13,
+    lineHeight: 18,
+    textAlign: "center",
   },
   icon: {
     width: 20,

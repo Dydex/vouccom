@@ -1,4 +1,5 @@
 import type { CategoryId } from "@/data/filters";
+import type { PurchaseKind } from "@/lib/api";
 
 export type Draw = {
   id: string;
@@ -50,34 +51,9 @@ export type Activity = {
   title: string;
   subtitle: string;
   time: string;
+  /** For purchases: what to load the receipt with. */
+  purchase?: { kind: PurchaseKind; id: string };
 };
-
-// TODO: replace with the user's recent activity from the backend.
-const ACTIVITY_SAMPLES: Omit<Activity, "id">[] = [
-  {
-    kind: "purchase",
-    title: "Purchased 5 vouchers",
-    subtitle: "2026 Honda Civic",
-    time: "2 hours ago",
-  },
-  {
-    kind: "saved",
-    title: "Saved a listing",
-    subtitle: "2025 Toyota Corolla",
-    time: "yesterday",
-  },
-  {
-    kind: "joined",
-    title: "Joined a draw",
-    subtitle: "2020 Kia Rio",
-    time: "3 days ago",
-  },
-];
-
-export const ACTIVITY: Activity[] = Array.from({ length: 9 }, (_, i) => ({
-  ...ACTIVITY_SAMPLES[i % ACTIVITY_SAMPLES.length],
-  id: `a${i + 1}`,
-}));
 
 // ---- The Draws tab: every draw, not just the user's own ----
 

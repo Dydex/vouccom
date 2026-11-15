@@ -16,9 +16,11 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ActivityRow } from "@/components/activity-row";
 import { DrawRow } from "@/components/draw-row";
+import { EntryDetailsSheet } from "@/components/entry-details-sheet";
 import { EntryRow } from "@/components/entry-row";
 import { ListingCard } from "@/components/listing-card";
 import { NotificationsSheet } from "@/components/notifications-sheet";
+import { PurchaseReceiptSheet } from "@/components/purchase-receipt-sheet";
 import { SectionBar } from "@/components/section-bar";
 import { useToast } from "@/components/toast";
 import { TopUpSheet } from "@/components/top-up-sheet";
@@ -26,21 +28,26 @@ import { VerifyEmailBanner } from "@/components/verify-email-banner";
 import { WinClaimSheet } from "@/components/win-claim-sheet";
 import { formatNaira } from "@/constants/currency";
 import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
-import { ACTIVITY, DRAWS } from "@/data/draws";
+import { DRAWS } from "@/data/draws";
 import { USER } from "@/data/user";
+import type { Entry } from "@/data/entries";
 import type { Listing } from "@/data/listings";
 import { useEntries } from "@/hooks/use-entries";
 import { useListings } from "@/hooks/use-listings";
 import { useNotifications } from "@/hooks/use-notifications";
+import { usePurchases } from "@/hooks/use-purchases";
 import { useTheme } from "@/hooks/use-theme";
 import { useWallet } from "@/hooks/use-wallet";
 import { useWinnings } from "@/hooks/use-winnings";
+import type { ApiPurchase } from "@/lib/api";
+import { toActivity } from "@/lib/purchases";
 import type { Win } from "@/lib/winnings";
 import { useAuth } from "@/state/auth";
 
 const SIDE = 20;
 
 const ACTIVE_SHOWN = 3;
+const ACTIVITY_SHOWN = 3;
 const BROWSE_COUNT = 8;
 
 export default function HomeScreen() {
@@ -70,10 +77,16 @@ export default function HomeScreen() {
     notifications.data?.notifications.filter((n) => !n.read).length ??
     0;
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const purchases = usePurchases();
+  const recentPurchases = (purchases.data ?? []).slice(0, ACTIVITY_SHOWN);
+  const [receiptPurchase, setReceiptPurchase] = useState<ApiPurchase>();
+  const [receiptOpen, setReceiptOpen] = useState(false);
   const winnings = useWinnings();
   const latestWin = winnings.data?.[0];
   const [claimWin, setClaimWin] = useState<Win>();
   const [claimOpen, setClaimOpen] = useState(false);
+  const [detailsEntry, setDetailsEntry] = useState<Entry>();
+  const [detailsOpen, setDetailsOpen] = useState(false);
   const balance = wallet.data && wallet.data.balanceKobo / 100;
   const entriesQuery = useEntries();
   const activeEntries = useMemo(
@@ -92,6 +105,7 @@ export default function HomeScreen() {
       wallet.refetch(),
       winnings.refetch(),
       notifications.refetch(),
+      purchases.refetch(),
     ]);
     if (!ok) {
       toast.show({
@@ -267,7 +281,14 @@ export default function HomeScreen() {
             </Text>
           ) : (
             activeEntries.map((entry) => (
-              <EntryRow key={entry.id} entry={entry} />
+              <EntryRow
+                key={entry.id}
+                entry={entry}
+                onViewDetails={() => {
+                  setDetailsEntry(entry);
+                  setDetailsOpen(true);
+                }}
+              />
             ))
           )}
         </View>
@@ -333,13 +354,54 @@ export default function HomeScreen() {
           onAction={() => router.push("/home/activity")}
         />
         <View style={styles.rowList}>
-          {ACTIVITY.slice(0, 3).map((activity) => (
-            <ActivityRow key={activity.id} activity={activity} />
-          ))}
+          {purchases.isPending ? (
+            <ActivityIndicator style={styles.rowLoading} color={theme.brand} />
+          ) : purchases.isError && !purchases.data ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => purchases.refetch()}
+            >
+              <Text
+                style={[styles.rowStateText, { color: theme.textSecondary }]}
+              >
+                Couldn't load your activity. Tap to try again.
+              </Text>
+            </Pressable>
+          ) : recentPurchases.length === 0 ? (
+            <Text style={[styles.rowStateText, { color: theme.textSecondary }]}>
+              No activity yet.
+            </Text>
+          ) : (
+            recentPurchases.map((purchase) => {
+              const activity = toActivity(purchase);
+              return (
+                <ActivityRow
+                  key={activity.id}
+                  activity={activity}
+                  onPress={() => {
+                    setReceiptPurchase(purchase);
+                    setReceiptOpen(true);
+                  }}
+                />
+              );
+            })
+          )}
         </View>
       </ScrollView>
 
       <TopUpSheet visible={topUpOpen} onClose={() => setTopUpOpen(false)} />
+
+      <EntryDetailsSheet
+        visible={detailsOpen}
+        onClose={() => setDetailsOpen(false)}
+        entry={detailsEntry}
+      />
+
+      <PurchaseReceiptSheet
+        visible={receiptOpen}
+        onClose={() => setReceiptOpen(false)}
+        purchase={receiptPurchase}
+      />
 
       <NotificationsSheet
         visible={notificationsOpen}
