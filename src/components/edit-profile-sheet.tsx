@@ -88,18 +88,25 @@ export function EditProfileSheet({
   const toast = useToast();
   const save = useUpdateProfile();
 
-  const [values, setValues] = useState<Values>(() =>
-    initialValues(section, user),
-  );
+  // The values are stored with the section they belong to, so one section's
+  // values can never be read as another's.
+  const [form, setForm] = useState<{
+    section: ProfileSection;
+    values: Values;
+  } | null>(null);
 
-  // Start from the saved profile each time the sheet opens (adjusting state
-  // while rendering, so the old values never flash).
+  // Start from the saved profile each time the sheet opens.
   const [openedFor, setOpenedFor] = useState<ProfileSection | null>(null);
   const current = visible ? section : null;
   if (current !== openedFor) {
     setOpenedFor(current);
-    if (current) setValues(initialValues(current, user));
+    if (current)
+      setForm({ section: current, values: initialValues(current, user) });
   }
+
+  // Until the reset above takes effect, fall back to the saved profile.
+  const values =
+    form?.section === section ? form.values : initialValues(section, user);
 
   const close = () => {
     save.reset();
@@ -109,7 +116,7 @@ export function EditProfileSheet({
   const result = toUpdate(section, values);
   const ready = "update" in result && !save.isPending;
   const set = (key: string) => (text: string) =>
-    setValues((v) => ({ ...v, [key]: text }));
+    setForm({ section, values: { ...values, [key]: text } });
 
   const submit = () => {
     if (!("update" in result) || save.isPending) return;
