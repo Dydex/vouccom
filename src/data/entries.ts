@@ -22,69 +22,6 @@ export type Entry = {
   enteredDaysAgo: number;
 };
 
-// TODO: replace this sample data with the signed-in user's entries from the backend.
-export const ENTRIES: Entry[] = [
-  {
-    id: "e1",
-    title: "UK Used 2026 Toyota Tundra",
-    entries: 5,
-    status: "active",
-    category: "cars",
-    brand: "Toyota",
-    voucherPrice: 500,
-    assetValue: 1_200_000,
-    daysLeft: 3,
-    enteredDaysAgo: 0,
-  },
-  {
-    id: "e2",
-    title: "New 2026 Ford Bronco",
-    entries: 5,
-    status: "active",
-    category: "cars",
-    brand: "Ford",
-    voucherPrice: 1000,
-    assetValue: 2_100_000,
-    daysLeft: 3,
-    enteredDaysAgo: 0,
-  },
-  {
-    id: "e3",
-    title: "UK Used 2026 Honda Civic",
-    entries: 45,
-    status: "active",
-    category: "cars",
-    brand: "Honda",
-    voucherPrice: 500,
-    assetValue: 900_000,
-    daysLeft: 3,
-    enteredDaysAgo: 0,
-  },
-  {
-    id: "e4",
-    title: "UK Used 2026 Toyota Tundra",
-    entries: 5,
-    status: "active",
-    category: "cars",
-    brand: "Toyota",
-    voucherPrice: 2000,
-    assetValue: 1_500_000,
-    daysLeft: 3,
-    enteredDaysAgo: 0,
-  },
-  {
-    id: "e5",
-    title: "UK Used 2026 Honda Civic",
-    entries: 5,
-    status: "completed",
-    category: "cars",
-    brand: "Honda",
-    voucherPrice: 1000,
-    assetValue: 900_000,
-    enteredDaysAgo: 0,
-  },
-];
-
 export function entryMeta(entry: Entry): string {
   const count = `${entry.entries} ${entry.entries === 1 ? "Entry" : "Entries"}`;
   if (entry.status === "completed") {

@@ -44,17 +44,24 @@ type RequestOptions = {
   method?: "GET" | "POST" | "PATCH" | "PUT" | "DELETE";
   body?: unknown;
   timeoutMs?: number;
+  headers?: Record<string, string>;
 };
 
 /** Calls the API and returns the parsed JSON. Throws ApiError on failure. */
 export async function request<T>(
   path: string,
-  { method = "GET", body, timeoutMs = TIMEOUT_MS }: RequestOptions = {},
+  {
+    method = "GET",
+    body,
+    timeoutMs = TIMEOUT_MS,
+    headers: extraHeaders,
+  }: RequestOptions = {},
 ): Promise<T> {
   const headers: Record<string, string> = {
     Accept: "application/json",
     // Required for /auth/login to return a token instead of a cookie.
     "X-Client-Type": "mobile",
+    ...extraHeaders,
   };
   if (body !== undefined) headers["Content-Type"] = "application/json";
   if (authToken) headers.Authorization = `Bearer ${authToken}`;
@@ -366,6 +373,160 @@ export type MyListingEntries = {
 export function getMyListingEntries(listingId: string) {
   return request<MyListingEntries>(
     `/listings/${encodeURIComponent(listingId)}/entries/mine`,
+  );
+}
+
+export type MyEntry = {
+  listingId: string;
+  /** Total vouchers held on this listing. */
+  quantity: number;
+  /** ISO date-time of the latest purchase. */
+  lastEntryAt: string;
+  /** Null if the listing has since been removed. */
+  listing: ApiListing | null;
+};
+
+/** One row per listing the user has entered. */
+export function getMyEntries() {
+  return request<{ entries: MyEntry[] }>("/entries/mine");
+}
+
+// --- Wallet and checkout ---
+
+export type WalletActivity = {
+  id: string;
+  /** Positive = money in, negative = money out. */
+  amountKobo: number;
+  /** e.g. "deposit", "voucher_purchase", "refund" */
+  type: string;
+  /** ISO date-time. */
+  at: string;
+};
+
+export type Wallet = {
+  balanceKobo: number;
+  /** Recent activity. */
+  entries: WalletActivity[];
+};
+
+export function getWallet() {
+  return request<Wallet>("/wallet");
+}
+
+export const MIN_TOP_UP_NAIRA = 100;
+export const MAX_TOP_UP_NAIRA = 5_000_000;
+
+/** Starts a Paystack top-up. Open `authorizationUrl`, then check the status. */
+export function startTopUp(amountKobo: number, idempotencyKey: string) {
+  return request<{
+    reference: string;
+    authorizationUrl: string;
+    accessCode: string;
+  }>("/wallet/fund", {
+    method: "POST",
+    body: { amountKobo },
+    headers: { "Idempotency-Key": idempotencyKey },
+  });
+}
+
+export type TopUpStatus = "pending" | "succeeded" | "failed" | "abandoned";
+
+export function getTopUpStatus(reference: string) {
+  return request<{
+    status: TopUpStatus;
+    amountKobo: number;
+    walletBalanceKobo: number;
+  }>(`/wallet/fund/${encodeURIComponent(reference)}`);
+}
+
+/** A card saved by Paystack during a card payment. */
+export type ApiSavedCard = {
+  id: string;
+  last4: string;
+  /** e.g. "visa", "mastercard", "verve" */
+  cardType: string;
+  bank: string | null;
+  expMonth: string;
+  expYear: string;
+};
+
+export function getSavedCards() {
+  return request<{ cards: ApiSavedCard[] }>("/cart/cards");
+}
+
+export function removeSavedCard(id: string) {
+  return request<{ ok: boolean }>(`/cart/cards/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
+}
+
+/** A purchase of vouchers on one listing (the `Entry` schema). */
+export type ApiEntry = {
+  id: string;
+  listingId: string;
+  quantity: number;
+  unitPriceNaira: number;
+  totalKobo: number;
+  ticketStart: number;
+  ticketEnd: number;
+  reference: string;
+  createdAt: string;
+};
+
+export type CartItem = { listingId: string; quantity: number };
+
+/**
+ * Pays from the wallet. 402 INSUFFICIENT_FUNDS if the balance is too low.
+ * Retrying with the same idempotency key never charges twice.
+ */
+export function checkoutWithWallet(items: CartItem[], idempotencyKey: string) {
+  return request<{ entries: ApiEntry[]; walletBalanceKobo: number }>(
+    "/cart/checkout/wallet",
+    {
+      method: "POST",
+      body: { items },
+      headers: { "Idempotency-Key": idempotencyKey },
+    },
+  );
+}
+
+export type CheckoutStatus = "pending" | "succeeded" | "failed" | "refunded";
+
+/** Starts a Paystack card payment. Open `authorizationUrl`, then check the status. */
+export function startCardCheckout(items: CartItem[], saveCard: boolean) {
+  return request<{
+    reference: string;
+    authorizationUrl: string;
+    accessCode: string;
+  }>("/cart/checkout/card", {
+    method: "POST",
+    body: { items, saveCard },
+  });
+}
+
+/** Charges a saved card directly, with no Paystack page. */
+export function checkoutWithSavedCard(
+  items: CartItem[],
+  cardId: string,
+  idempotencyKey: string,
+) {
+  return request<{ reference: string; status: CheckoutStatus }>(
+    "/cart/checkout/saved-card",
+    {
+      method: "POST",
+      body: { items, cardId },
+      headers: { "Idempotency-Key": idempotencyKey },
+    },
+  );
+}
+
+/**
+ * The result of a card checkout. "refunded" means the card was charged but
+ * the order couldn't be filled, so the money went to the wallet.
+ */
+export function getCheckoutStatus(reference: string) {
+  return request<{ status: CheckoutStatus; amountKobo: number }>(
+    `/cart/checkout/${encodeURIComponent(reference)}`,
   );
 }
 

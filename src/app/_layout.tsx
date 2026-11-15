@@ -64,6 +64,10 @@ function RootNavigator() {
         <Stack.Protected guard={status === "signedIn"} redirectTo="/login">
           <Stack.Screen name="(tabs)" />
           <Stack.Screen name="listing/[id]" />
+          <Stack.Screen
+            name="payment"
+            options={{ presentation: "fullScreenModal", gestureEnabled: false }}
+          />
         </Stack.Protected>
       </Stack>
     </>

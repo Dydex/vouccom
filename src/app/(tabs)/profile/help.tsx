@@ -11,8 +11,8 @@ import { SectionBar } from "@/components/section-bar";
 import { TransactionRow } from "@/components/transaction-row";
 import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
 import { SAMPLE_MESSAGES } from "@/data/support";
-import { TRANSACTIONS } from "@/data/wallet";
 import { useTheme } from "@/hooks/use-theme";
+import { useWalletActivity } from "@/hooks/use-wallet";
 
 // TODO: replace with the questions from the help centre.
 const FAQS = [
@@ -24,6 +24,7 @@ const FAQS = [
 export default function HelpCentreScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const activity = useWalletActivity();
 
   // TODO: show the messages for the transaction that was tapped (or, from the
   // "Contact Support" button, all of the user's support messages).
@@ -46,7 +47,7 @@ export default function HelpCentreScreen() {
           Need help with a recent purchase?
         </Text>
         <View style={styles.list}>
-          {TRANSACTIONS.slice(0, 2).map((tx) => (
+          {(activity.data ?? []).slice(0, 2).map((tx) => (
             <TransactionRow
               key={tx.id}
               tx={tx}
@@ -154,7 +155,7 @@ const styles = StyleSheet.create({
   },
   forward: {
     width: 20,
-    height: 20, 
+    height: 20,
   },
   pressed: {
     opacity: 0.7,

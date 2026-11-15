@@ -1,50 +1,95 @@
 import { SymbolView } from "expo-symbols";
 import { useState } from "react";
-import { Pressable, ScrollView, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  Alert,
+  Pressable,
+  RefreshControl,
+  ScrollView,
+  StyleSheet,
+  View,
+} from "react-native";
 import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { CardFormSheet } from "@/components/card-form-sheet";
 import { CardLogo } from "@/components/card-logo";
 import { PopoverMenu } from "@/components/popover-menu";
 import { SectionBar } from "@/components/section-bar";
 import { TransactionRow } from "@/components/transaction-row";
+import { useToast } from "@/components/toast";
+import { TopUpSheet } from "@/components/top-up-sheet";
 import { TransactionSheet } from "@/components/transaction-sheet";
 import { formatNaira } from "@/constants/currency";
 import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
-import {
-  SAVED_CARDS,
-  TRANSACTIONS,
-  WALLET_BALANCE,
-  type Transaction,
-} from "@/data/wallet";
+import type { SavedCard, Transaction } from "@/data/wallet";
 import { useTheme } from "@/hooks/use-theme";
+import {
+  useRemoveCard,
+  useSavedCards,
+  useWalletActivity,
+  useWalletBalance,
+} from "@/hooks/use-wallet";
+import { ApiError } from "@/lib/api";
 
 const SIDE = 20;
 
 export default function WalletScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const toast = useToast();
+  const balance = useWalletBalance();
+  const activity = useWalletActivity();
+  const cards = useSavedCards();
+  const removeCard = useRemoveCard();
+  const [refreshing, setRefreshing] = useState(false);
+  const [topUpOpen, setTopUpOpen] = useState(false);
 
-  // TODO: saving the default card belongs on the backend.
-  const [cards, setCards] = useState(SAVED_CARDS);
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await Promise.all([activity.refetch(), cards.refetch()]);
+    setRefreshing(false);
+  };
 
-  // One form for both adding a card and editing one.
-  const [formOpen, setFormOpen] = useState(false);
-  // Kept after closing so the form keeps its content while it fades out.
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const editingCard = cards.find((c) => c.id === editingId);
+  const confirmRemove = (card: SavedCard) =>
+    Alert.alert(
+      "Remove card?",
+      `${card.label} ending ${card.last4} will no longer be offered at checkout.`,
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Remove",
+          style: "destructive",
+          onPress: () =>
+            removeCard.mutate(card.id, {
+              onSuccess: () =>
+                toast.show({ tone: "success", message: "Card removed." }),
+              onError: (error) =>
+                toast.show({
+                  tone: "error",
+                  message:
+                    error instanceof ApiError
+                      ? error.message
+                      : "Couldn't remove the card.",
+                }),
+            }),
+        },
+      ],
+    );
 
   const [selectedTx, setSelectedTx] = useState<Transaction | undefined>();
   const [txOpen, setTxOpen] = useState(false);
-
-  const setDefault = (id: string) =>
-    setCards((list) => list.map((c) => ({ ...c, isDefault: c.id === id })));
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
       <ScrollView
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.brand}
+          />
+        }
         contentContainerStyle={{
           paddingTop: insets.top + Spacing.three,
           paddingBottom:
@@ -56,7 +101,7 @@ export default function WalletScreen() {
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Top up wallet"
-            // TODO: start a wallet top-up.
+            onPress={() => setTopUpOpen(true)}
             style={[styles.topUp, { backgroundColor: theme.balanceButton }]}
           >
             <SymbolView
@@ -75,7 +120,7 @@ export default function WalletScreen() {
               Available balance
             </Text>
             <Text style={[styles.balanceAmount, { color: theme.onBrand }]}>
-              {formatNaira(WALLET_BALANCE)}
+              {balance === undefined ? "..." : formatNaira(balance)}
             </Text>
           </View>
         </View>
@@ -87,13 +132,33 @@ export default function WalletScreen() {
           pillColor={theme.viewAllPill}
           pillTextColor={theme.text}
           actionLabel="Add new"
-          onAction={() => {
-            setEditingId(null);
-            setFormOpen(true);
-          }}
+          // Paystack saves a card when you pay with it; there's no form for it.
+          onAction={() =>
+            toast.show({
+              tone: "info",
+              message:
+                "Cards are saved when you pay by card, which is coming soon.",
+            })
+          }
         />
         <View style={styles.list}>
-          {cards.map((card) => (
+          {cards.isPending ? (
+            <ActivityIndicator style={styles.loading} color={theme.brand} />
+          ) : cards.isError && !cards.data ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => cards.refetch()}
+            >
+              <Text style={[styles.message, { color: theme.textSecondary }]}>
+                Couldn't load your cards. Tap to try again.
+              </Text>
+            </Pressable>
+          ) : cards.data?.length === 0 ? (
+            <Text style={[styles.message, { color: theme.textSecondary }]}>
+              No saved cards yet.
+            </Text>
+          ) : null}
+          {cards.data?.map((card) => (
             <View
               key={card.id}
               style={[styles.row, { backgroundColor: theme.card }]}
@@ -104,34 +169,25 @@ export default function WalletScreen() {
 
               <View style={styles.rowText}>
                 <Text style={[styles.title, { color: theme.text }]}>
-                  {card.brand} **** {card.last4}
+                  {card.label} **** {card.last4}
                 </Text>
                 <View style={styles.metaRow}>
                   <Text style={[styles.meta, { color: theme.textSecondary }]}>
                     Expires {card.expires}
                   </Text>
-                  {card.isDefault && (
+                  {card.bank && (
                     <Text style={[styles.meta, { color: theme.textSecondary }]}>
-                      Default
+                      {card.bank}
                     </Text>
                   )}
                 </View>
               </View>
 
               <PopoverMenu
-                label={`Options for ${card.brand} ending ${card.last4}`}
-                options={[
-                  { value: "edit", label: "Edit" },
-                  ...(card.isDefault
-                    ? []
-                    : [{ value: "default", label: "Set as default" }]),
-                ]}
+                label={`Options for ${card.label} ending ${card.last4}`}
+                options={[{ value: "remove", label: "Remove" }]}
                 onSelect={(value) => {
-                  if (value === "default") setDefault(card.id);
-                  if (value === "edit") {
-                    setEditingId(card.id);
-                    setFormOpen(true);
-                  }
+                  if (value === "remove") confirmRemove(card);
                 }}
               >
                 <SymbolView
@@ -159,7 +215,23 @@ export default function WalletScreen() {
           // TODO: open the full transaction history.
         />
         <View style={styles.list}>
-          {TRANSACTIONS.map((tx) => (
+          {activity.isPending ? (
+            <ActivityIndicator style={styles.loading} color={theme.brand} />
+          ) : activity.isError && !activity.data ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => activity.refetch()}
+            >
+              <Text style={[styles.message, { color: theme.textSecondary }]}>
+                Couldn't load your activity. Tap to try again.
+              </Text>
+            </Pressable>
+          ) : activity.data?.length === 0 ? (
+            <Text style={[styles.message, { color: theme.textSecondary }]}>
+              No wallet activity yet.
+            </Text>
+          ) : null}
+          {activity.data?.map((tx) => (
             <TransactionRow
               key={tx.id}
               tx={tx}
@@ -172,44 +244,12 @@ export default function WalletScreen() {
         </View>
       </ScrollView>
 
+      <TopUpSheet visible={topUpOpen} onClose={() => setTopUpOpen(false)} />
+
       <TransactionSheet
         visible={txOpen}
         onClose={() => setTxOpen(false)}
         transaction={selectedTx}
-      />
-
-      <CardFormSheet
-        visible={formOpen}
-        onClose={() => setFormOpen(false)}
-        card={editingCard}
-        onSubmit={(result) =>
-          setCards((list) => {
-            // The first card, or one saved with "set as default", becomes the default.
-            const makeDefault = result.setAsDefault || list.length === 0;
-            const fields = {
-              brand: result.brand,
-              last4: result.last4,
-              expires: result.expires,
-              name: result.name,
-            };
-
-            if (editingCard) {
-              return list.map((c) =>
-                c.id === editingCard.id
-                  ? { ...c, ...fields, isDefault: makeDefault || c.isDefault }
-                  : makeDefault
-                    ? { ...c, isDefault: false }
-                    : c,
-              );
-            }
-            return [
-              ...list.map((c) =>
-                makeDefault ? { ...c, isDefault: false } : c,
-              ),
-              { id: `card-${Date.now()}`, ...fields, isDefault: makeDefault },
-            ];
-          })
-        }
       />
     </View>
   );
@@ -247,6 +287,14 @@ const styles = StyleSheet.create({
     fontSize: 40,
     lineHeight: 48,
     fontWeight: "500",
+  },
+  loading: {
+    marginVertical: Spacing.three,
+  },
+  message: {
+    fontSize: 13,
+    textAlign: "center",
+    marginVertical: Spacing.two,
   },
   list: {
     marginHorizontal: SIDE,

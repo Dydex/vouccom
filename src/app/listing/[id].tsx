@@ -16,7 +16,7 @@ import {
 import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { CheckoutSheet } from "@/components/checkout-sheet";
+import { CheckoutSheet, type PaymentMethod } from "@/components/checkout-sheet";
 import { AdditionalInfoSheet } from "@/components/additional-info-sheet";
 import { CommentsSheet } from "@/components/comments-sheet";
 import { DescriptionSheet } from "@/components/description-sheet";
@@ -34,8 +34,13 @@ import {
   type Listing,
 } from "@/data/listings";
 import { useToast } from "@/components/toast";
-import { useListing, useMyEntries, useSaveListing } from "@/hooks/use-listings";
+import { useListing, useMyTickets, useSaveListing } from "@/hooks/use-listings";
 import { useTheme } from "@/hooks/use-theme";
+import {
+  useSavedCardCheckout,
+  useStartCardCheckout,
+  useWalletCheckout,
+} from "@/hooks/use-checkout";
 import { ApiError } from "@/lib/api";
 import { formatTickets } from "@/lib/format";
 import { isApiListingId } from "@/lib/listings";
@@ -132,7 +137,7 @@ function ListingDetails({ listing }: { listing: Listing }) {
   const save = useSaveListing(listing.id);
   // Sample listings (from the Draws tab) keep their sample entries.
   const live = isApiListingId(listing.id);
-  const mine = useMyEntries(listing.id, live);
+  const mine = useMyTickets(listing.id, live);
   const winner = mine.data?.winner;
 
   const entries = live
@@ -147,6 +152,105 @@ function ListingDetails({ listing }: { listing: Listing }) {
         detail: `${listing.userEntries.daysAgo} ${listing.userEntries.daysAgo === 1 ? "day" : "days"} ago`,
       };
   const saved = listing.savedByMe ?? false;
+
+  const walletCheckout = useWalletCheckout();
+  const savedCardCheckout = useSavedCardCheckout();
+  const cardCheckout = useStartCardCheckout();
+  const paying =
+    walletCheckout.isPending ||
+    savedCardCheckout.isPending ||
+    cardCheckout.isPending;
+  const [payError, setPayError] = useState<string>();
+
+  const closeSheet = () => {
+    setSheet(null);
+    setPayError(undefined);
+  };
+
+  const showError = (error: Error) =>
+    setPayError(
+      error instanceof ApiError
+        ? error.message
+        : "The payment didn't go through. Please try again.",
+    );
+
+  const paid = (title: string, message: string) => {
+    closeSheet();
+    setQuantity(1);
+    toast.show({ title, message });
+  };
+
+  const pay = (method: PaymentMethod, options: { saveCard: boolean }) => {
+    setPayError(undefined);
+    if (!live) {
+      setPayError("This is a sample listing and can't be bought.");
+      return;
+    }
+    const items = [{ listingId: listing.id, quantity }];
+
+    if (method === "wallet") {
+      walletCheckout.mutate(items, {
+        onSuccess: ({ entries }) => {
+          const entry = entries[0];
+          paid(
+            "You're in the draw!",
+            !entry
+              ? "Your vouchers were bought."
+              : entry.ticketStart === entry.ticketEnd
+                ? `Your ticket is #${entry.ticketStart}.`
+                : `Your tickets are #${entry.ticketStart} - #${entry.ticketEnd}.`,
+          );
+        },
+        onError: showError,
+      });
+    } else if (method === "paystack") {
+      cardCheckout.mutate(
+        { items, saveCard: options.saveCard },
+        {
+          onSuccess: ({ authorizationUrl, reference }) => {
+            closeSheet();
+            setQuantity(1);
+            router.push({
+              pathname: "/payment",
+              params: { url: authorizationUrl, reference },
+            });
+          },
+          onError: showError,
+        },
+      );
+    } else if (method === "flutterwave") {
+      setPayError(
+        "Flutterwave isn't available yet. Please choose another way to pay.",
+      );
+    } else {
+      // A saved card's id.
+      savedCardCheckout.mutate(
+        { items, cardId: method },
+        {
+          onSuccess: ({ status }) => {
+            if (status === "succeeded") {
+              paid("You're in the draw!", "Your tickets are in My Entries.");
+            } else if (status === "pending") {
+              paid(
+                "Confirming your payment",
+                "Your tickets will appear in My Entries once it's confirmed.",
+              );
+            } else if (status === "refunded") {
+              paid(
+                "We couldn't complete your order",
+                "Your card was charged, so we've added the amount to your wallet.",
+              );
+            } else {
+              setPayError(
+                "Your card was declined. Try another card or your wallet.",
+              );
+            }
+          },
+          onError: showError,
+        },
+      );
+    }
+  };
 
   const toggleSaved = () => {
     // Wait for the full listing (savedByMe) and for the last tap to finish.
@@ -521,14 +625,20 @@ function ListingDetails({ listing }: { listing: Listing }) {
 
       <CheckoutSheet
         visible={sheet === "checkout"}
-        onClose={() => setSheet(null)}
+        onClose={closeSheet}
+        onProceed={pay}
+        processing={paying}
+        error={payError}
         itemName={`${rest.length ? rest.join(" ") : title} voucher`}
         unitPrice={listing.voucherPrice}
         quantity={quantity}
         maxQuantity={MAX_QUANTITY}
-        onQuantityChange={setQuantity}
+        onQuantityChange={(n) => {
+          setQuantity(n);
+          setPayError(undefined);
+        }}
         onRemove={() => {
-          setSheet(null);
+          closeSheet();
           setQuantity(1);
         }}
       />

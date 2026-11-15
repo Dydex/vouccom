@@ -1,15 +1,15 @@
 import { Image } from "expo-image";
 import { SymbolView } from "expo-symbols";
 import { useEffect, useState, type ReactNode } from "react";
-import { Pressable, StyleSheet, View } from "react-native";
+import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { Text } from "@/components/text";
 
 import { BottomSheet } from "@/components/bottom-sheet";
 import { CardLogo } from "@/components/card-logo";
 import { formatNaira } from "@/constants/currency";
 import { Spacing } from "@/constants/theme";
-import { SAVED_CARDS, WALLET_BALANCE } from "@/data/wallet";
 import { useTheme } from "@/hooks/use-theme";
+import { useSavedCards, useWalletBalance } from "@/hooks/use-wallet";
 
 const PROVIDERS = [
   {
@@ -29,7 +29,7 @@ const PROVIDERS = [
   },
 ] as const;
 
-type PaymentMethod = string; // a saved card id, "wallet", "paystack" or "flutterwave"
+export type PaymentMethod = string; // a saved card id, "wallet", "paystack" or "flutterwave"
 
 type CheckoutSheetProps = {
   visible: boolean;
@@ -43,7 +43,11 @@ type CheckoutSheetProps = {
   onQuantityChange: (quantity: number) => void;
   /** Called when the user removes the item from the order. */
   onRemove: () => void;
-  onProceed?: (method: PaymentMethod) => void;
+  onProceed?: (method: PaymentMethod, options: { saveCard: boolean }) => void;
+  /** Shows a spinner on Proceed while the payment goes through. */
+  processing?: boolean;
+  /** Why the last payment failed. */
+  error?: string;
 };
 
 export function CheckoutSheet({
@@ -56,20 +60,28 @@ export function CheckoutSheet({
   onQuantityChange,
   onRemove,
   onProceed,
+  processing,
+  error,
 }: CheckoutSheetProps) {
   const theme = useTheme();
+  const balance = useWalletBalance();
+  const cards = useSavedCards();
 
-  const [method, setMethod] = useState<PaymentMethod>(
-    SAVED_CARDS[0]?.id ?? "wallet",
-  );
+  // TODO: default to the first saved card once card payments work.
+  const [method, setMethod] = useState<PaymentMethod>("wallet");
+  const [saveCard, setSaveCard] = useState(true);
 
-  // Start from the first saved card each time the sheet opens.
   useEffect(() => {
-    if (visible) setMethod(SAVED_CARDS[0]?.id ?? "wallet");
+    if (visible) setMethod("wallet");
   }, [visible]);
 
   const total = unitPrice * quantity;
-  const insufficient = method === "wallet" && total > WALLET_BALANCE;
+  const insufficient =
+    method === "wallet" && balance !== undefined && total > balance;
+  const blocked =
+    insufficient ||
+    processing ||
+    (method === "wallet" && balance === undefined);
 
   return (
     <BottomSheet
@@ -80,20 +92,23 @@ export function CheckoutSheet({
       footer={
         <Pressable
           accessibilityRole="button"
-          accessibilityState={{ disabled: insufficient }}
-          disabled={insufficient}
-          // TODO: take the payment, then show the order confirmation.
-          onPress={() => onProceed?.(method)}
+          accessibilityState={{ disabled: !!blocked, busy: !!processing }}
+          disabled={!!blocked}
+          onPress={() => onProceed?.(method, { saveCard })}
           style={({ pressed }) => [
             styles.proceed,
             { backgroundColor: theme.brand },
-            insufficient && styles.disabled,
+            blocked && !processing && styles.disabled,
             pressed && styles.pressed,
           ]}
         >
-          <Text style={[styles.proceedText, { color: theme.onBrand }]}>
-            Proceed
-          </Text>
+          {processing ? (
+            <ActivityIndicator color={theme.onBrand} />
+          ) : (
+            <Text style={[styles.proceedText, { color: theme.onBrand }]}>
+              Proceed
+            </Text>
+          )}
         </Pressable>
       }
     >
@@ -179,13 +194,13 @@ export function CheckoutSheet({
           Select payment method
         </Text>
 
-        {SAVED_CARDS.map((card) => (
+        {cards.data?.map((card) => (
           <MethodRow
             key={card.id}
             selected={method === card.id}
             onPress={() => setMethod(card.id)}
             left={<CardLogo brand={card.brand} />}
-            label={`${card.brand} **** ${card.last4}`}
+            label={`${card.label} **** ${card.last4}`}
             right={
               <Pressable
                 accessibilityRole="button"
@@ -221,7 +236,9 @@ export function CheckoutSheet({
           label="My Wallet"
           right={
             <Text style={[styles.balance, styles.heavy, { color: theme.text }]}>
-              Bal. {formatNaira(WALLET_BALANCE)}
+              {balance === undefined
+                ? "Bal. ..."
+                : `Bal. ${formatNaira(balance)}`}
             </Text>
           }
         />
@@ -279,16 +296,48 @@ export function CheckoutSheet({
           ))}
         </View>
 
+        {method === "paystack" && (
+          <Pressable
+            accessibilityRole="checkbox"
+            accessibilityState={{ checked: saveCard }}
+            onPress={() => setSaveCard((v) => !v)}
+            style={styles.saveCard}
+          >
+            <View
+              style={[
+                styles.checkbox,
+                {
+                  backgroundColor: saveCard ? theme.brand : "transparent",
+                  borderColor: saveCard ? theme.brand : theme.placeholder,
+                },
+              ]}
+            >
+              {saveCard && (
+                <SymbolView
+                  name={{ ios: "checkmark", android: "check", web: "check" }}
+                  tintColor={theme.onBrand}
+                  size={11}
+                />
+              )}
+            </View>
+            <Text style={[styles.text, { color: theme.text }]}>
+              Save this card for next time
+            </Text>
+          </Pressable>
+        )}
+
         {/* TODO: replace with the real terms copy. */}
         <Text style={[styles.terms, { color: theme.textSecondary }]}>
           By placing your order you consent to our Terms of Use.
         </Text>
 
-        {insufficient && (
+        {insufficient ? (
           <Text style={[styles.warning, { color: theme.coral }]}>
             Your wallet balance is too low for this order.
           </Text>
-        )}
+        ) : error ? (
+          <Text style={[styles.warning, { color: theme.coral }]}>{error}</Text>
+        ) : null}
       </View>
     </BottomSheet>
   );
@@ -330,6 +379,20 @@ function MethodRow({
 }
 
 const styles = StyleSheet.create({
+  saveCard: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: Spacing.two + Spacing.one,
+    marginTop: Spacing.three,
+  },
+  checkbox: {
+    width: 18,
+    height: 18,
+    borderRadius: 5,
+    borderWidth: 1.5,
+    alignItems: "center",
+    justifyContent: "center",
+  },
   content: {
     gap: Spacing.three,
   },

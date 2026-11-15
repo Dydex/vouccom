@@ -1,3 +1,4 @@
+import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
 import { Pressable, StyleSheet, View } from "react-native";
 import { Text } from "@/components/text";
@@ -5,11 +6,13 @@ import { Text } from "@/components/text";
 import { Spacing } from "@/constants/theme";
 import { entryMeta, type Entry } from "@/data/entries";
 import { useTheme } from "@/hooks/use-theme";
+import { isApiListingId } from "@/lib/listings";
 
 type EntryRowProps = {
   entry: Entry;
   /** Defaults to the shared card colour (or the win colour for won entries). */
   backgroundColor?: string;
+  /** Defaults to opening the listing. */
   onViewDetails?: (entry: Entry) => void;
 };
 
@@ -21,6 +24,14 @@ export function EntryRow({
   const theme = useTheme();
 
   const bg = backgroundColor ?? (entry.won ? theme.winRow : theme.card);
+
+  const viewDetails = () => {
+    if (onViewDetails) onViewDetails(entry);
+    // An entry's id is its listing's id; sample entries have no listing.
+    else if (isApiListingId(entry.id)) {
+      router.push({ pathname: "/listing/[id]", params: { id: entry.id } });
+    }
+  };
 
   return (
     <View style={[styles.card, { backgroundColor: bg }]}>
@@ -44,8 +55,7 @@ export function EntryRow({
           accessibilityRole="button"
           accessibilityLabel={`View details for ${entry.title}`}
           hitSlop={8}
-          // TODO: navigate to the entry details screen once it exists.
-          onPress={() => onViewDetails?.(entry)}
+          onPress={viewDetails}
         >
           <Text style={[styles.metaText, { color: theme.textSecondary }]}>
             View details

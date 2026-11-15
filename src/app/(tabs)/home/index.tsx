@@ -1,7 +1,7 @@
 import { Image } from "expo-image";
 import { router } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -20,21 +20,23 @@ import { EntryRow } from "@/components/entry-row";
 import { ListingCard } from "@/components/listing-card";
 import { SectionBar } from "@/components/section-bar";
 import { useToast } from "@/components/toast";
+import { TopUpSheet } from "@/components/top-up-sheet";
 import { VerifyEmailBanner } from "@/components/verify-email-banner";
 import { formatNaira } from "@/constants/currency";
 import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
 import { ACTIVITY, DRAWS } from "@/data/draws";
-import { ENTRIES, WINS } from "@/data/entries";
+import { WINS } from "@/data/entries";
 import { USER } from "@/data/user";
-import { WALLET_BALANCE } from "@/data/wallet";
 import type { Listing } from "@/data/listings";
+import { useEntries } from "@/hooks/use-entries";
 import { useListings } from "@/hooks/use-listings";
 import { useTheme } from "@/hooks/use-theme";
+import { useWallet } from "@/hooks/use-wallet";
 import { useAuth } from "@/state/auth";
 
 const SIDE = 20;
 
-const ACTIVE_ENTRIES = ENTRIES.filter((e) => e.status === "active").slice(0, 3);
+const ACTIVE_SHOWN = 3;
 const BROWSE_COUNT = 8;
 
 export default function HomeScreen() {
@@ -45,17 +47,36 @@ export default function HomeScreen() {
   // Falls back to sample data until the user has loaded.
   const firstName = user?.profile.firstName ?? USER.firstName;
 
-  const { listings, status, error, refreshing, refresh, retry } =
-    useListings();
-  const featured = useMemo(() => listings.filter((l) => l.featured), [listings]);
+  const { listings, status, error, refreshing, refresh, retry } = useListings();
+  const featured = useMemo(
+    () => listings.filter((l) => l.featured),
+    [listings],
+  );
   // Featured listings already have their own row above.
   const browse = useMemo(
     () => listings.filter((l) => !l.featured).slice(0, BROWSE_COUNT),
     [listings],
   );
 
+  const wallet = useWallet();
+  const [topUpOpen, setTopUpOpen] = useState(false);
+  const balance = wallet.data && wallet.data.balanceKobo / 100;
+  const entriesQuery = useEntries();
+  const activeEntries = useMemo(
+    () =>
+      (entriesQuery.data ?? [])
+        .filter((e) => e.status === "active")
+        .slice(0, ACTIVE_SHOWN),
+    [entriesQuery.data],
+  );
+
   const onRefresh = async () => {
-    const [ok] = await Promise.all([refresh(), refreshUser()]);
+    const [ok] = await Promise.all([
+      refresh(),
+      refreshUser(),
+      entriesQuery.refetch(),
+      wallet.refetch(),
+    ]);
     if (!ok) {
       toast.show({
         tone: "error",
@@ -120,12 +141,13 @@ export default function HomeScreen() {
               Available Balance
             </Text>
             <Text style={[styles.balanceAmount, { color: theme.onBrand }]}>
-              {formatNaira(WALLET_BALANCE)}
+              {balance === undefined ? "..." : formatNaira(balance)}
             </Text>
           </View>
           <Pressable
             accessibilityRole="button"
             accessibilityLabel="Add funds"
+            onPress={() => setTopUpOpen(true)}
             style={[styles.addButton, { backgroundColor: theme.balanceButton }]}
           >
             <SymbolView
@@ -194,9 +216,28 @@ export default function HomeScreen() {
           onAction={() => router.push("/home/entries")}
         />
         <View style={styles.rowList}>
-          {ACTIVE_ENTRIES.map((entry) => (
-            <EntryRow key={entry.id} entry={entry} />
-          ))}
+          {entriesQuery.isPending ? (
+            <ActivityIndicator style={styles.rowLoading} color={theme.brand} />
+          ) : entriesQuery.isError && !entriesQuery.data ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => entriesQuery.refetch()}
+            >
+              <Text
+                style={[styles.rowStateText, { color: theme.textSecondary }]}
+              >
+                Couldn't load your entries. Tap to try again.
+              </Text>
+            </Pressable>
+          ) : activeEntries.length === 0 ? (
+            <Text style={[styles.rowStateText, { color: theme.textSecondary }]}>
+              You have no active entries.
+            </Text>
+          ) : (
+            activeEntries.map((entry) => (
+              <EntryRow key={entry.id} entry={entry} />
+            ))
+          )}
         </View>
 
         {/* My draws */}
@@ -242,6 +283,8 @@ export default function HomeScreen() {
           ))}
         </View>
       </ScrollView>
+
+      <TopUpSheet visible={topUpOpen} onClose={() => setTopUpOpen(false)} />
     </View>
   );
 }
@@ -397,6 +440,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     gap: Spacing.two,
+  },
+  rowLoading: {
+    marginVertical: Spacing.three,
   },
   rowStateText: {
     fontSize: 13,

@@ -1,10 +1,24 @@
 import { Image } from "expo-image";
+import { SymbolView } from "expo-symbols";
 import { StyleSheet } from "react-native";
 
 import type { CardBrand } from "@/data/wallet";
+import { useTheme } from "@/hooks/use-theme";
 
-/** The exported Visa or Mastercard logo for a saved card. */
+/** The Visa or Mastercard logo for a saved card, or a generic card icon. */
 export function CardLogo({ brand }: { brand: CardBrand }) {
+  const theme = useTheme();
+
+  if (brand === "Card") {
+    return (
+      <SymbolView
+        name={{ ios: "creditcard", android: "credit_card", web: "credit_card" }}
+        tintColor={theme.text}
+        size={18}
+      />
+    );
+  }
+
   return brand === "VISA" ? (
     <Image
       source={require("@/assets/images/payments/visa.png")}

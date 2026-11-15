@@ -1,5 +1,12 @@
 import { useMemo, useState } from "react";
-import { FlatList, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  View,
+} from "react-native";
 import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -10,9 +17,10 @@ import { ListControls } from "@/components/list-controls";
 import { ListHeader } from "@/components/list-header";
 import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
 import { daysAgoRange, type DateFilter } from "@/data/date-filter";
-import { ENTRIES } from "@/data/entries";
 import { DEFAULT_FILTERS, matchesFilters } from "@/data/filters";
+import { useEntries } from "@/hooks/use-entries";
 import { useTheme } from "@/hooks/use-theme";
+import { ApiError } from "@/lib/api";
 
 const SIDE = 20;
 
@@ -29,15 +37,25 @@ export default function EntriesScreen() {
   const insets = useSafeAreaInsets();
 
   const [query, setQuery] = useState("");
-  const [date, setDate] = useState<DateFilter>("today");
+  const [date, setDate] = useState<DateFilter>("all");
   const [status, setStatus] = useState<StatusFilter>("all");
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const entriesQuery = useEntries();
+  const loaded = entriesQuery.data;
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await entriesQuery.refetch();
+    setRefreshing(false);
+  };
 
   const entries = useMemo(() => {
     const q = query.trim().toLowerCase();
     const [minDays, maxDays] = daysAgoRange(date);
-    return ENTRIES.filter(
+    return (loaded ?? []).filter(
       (e) =>
         e.enteredDaysAgo >= minDays &&
         e.enteredDaysAgo <= maxDays &&
@@ -46,7 +64,7 @@ export default function EntriesScreen() {
         (!q || e.title.toLowerCase().includes(q)) &&
         matchesFilters(e, filters),
     );
-  }, [query, date, status, filters]);
+  }, [loaded, query, date, status, filters]);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -63,6 +81,13 @@ export default function EntriesScreen() {
         keyExtractor={(item) => item.id}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.brand}
+          />
+        }
         contentContainerStyle={[
           styles.listContent,
           {
@@ -85,9 +110,36 @@ export default function EntriesScreen() {
           />
         }
         ListEmptyComponent={
-          <Text style={[styles.empty, { color: theme.textSecondary }]}>
-            No entries found
-          </Text>
+          entriesQuery.isPending ? (
+            <ActivityIndicator
+              style={styles.loading}
+              size="large"
+              color={theme.brand}
+            />
+          ) : entriesQuery.isError && !loaded ? (
+            <View style={styles.errorBox}>
+              <Text style={[styles.empty, { color: theme.textSecondary }]}>
+                {entriesQuery.error instanceof ApiError
+                  ? entriesQuery.error.message
+                  : "Couldn't load your entries."}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => entriesQuery.refetch()}
+                hitSlop={8}
+              >
+                <Text style={[styles.retryText, { color: theme.brand }]}>
+                  Try again
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Text style={[styles.empty, { color: theme.textSecondary }]}>
+              {loaded?.length
+                ? "No entries match your search."
+                : "You haven't entered any draws yet."}
+            </Text>
+          )
         }
         renderItem={({ item }) => <EntryRow entry={item} />}
       />
@@ -109,6 +161,17 @@ const styles = StyleSheet.create({
   listContent: {
     paddingHorizontal: SIDE,
     gap: Spacing.two + Spacing.half,
+  },
+  loading: {
+    marginTop: Spacing.six,
+  },
+  errorBox: {
+    alignItems: "center",
+    gap: Spacing.three,
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   empty: {
     marginTop: Spacing.five,

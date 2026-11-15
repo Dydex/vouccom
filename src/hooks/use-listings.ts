@@ -140,7 +140,7 @@ export function useSaveListing(id: string) {
 }
 
 /** The signed-in user's tickets on a listing, and the winner once drawn. */
-export function useMyEntries(listingId: string, enabled = true) {
+export function useMyTickets(listingId: string, enabled = true) {
   return useQuery({
     queryKey: [...listingKeys.one(listingId), "entries"],
     queryFn: () => getMyListingEntries(listingId),
