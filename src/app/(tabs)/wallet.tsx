@@ -81,22 +81,8 @@ export default function WalletScreen() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        refreshControl={
-          <RefreshControl
-            refreshing={refreshing}
-            onRefresh={onRefresh}
-            tintColor={theme.brand}
-          />
-        }
-        contentContainerStyle={{
-          paddingTop: insets.top + Spacing.three,
-          paddingBottom:
-            FloatingTabBarHeight + Math.max(insets.bottom, 12) + Spacing.five,
-        }}
-      >
-        {/* Balance */}
+      {/* Balance: fixed above the list, so pull to refresh starts below it. */}
+      <View style={{ paddingTop: insets.top + Spacing.three }}>
         <View style={[styles.balanceCard, { backgroundColor: theme.brand }]}>
           <Pressable
             accessibilityRole="button"
@@ -124,7 +110,23 @@ export default function WalletScreen() {
             </Text>
           </View>
         </View>
+      </View>
 
+      <ScrollView
+        style={styles.scroll}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.brand}
+          />
+        }
+        contentContainerStyle={{
+          paddingBottom:
+            FloatingTabBarHeight + Math.max(insets.bottom, 12) + Spacing.five,
+        }}
+      >
         {/* Payment methods */}
         <SectionBar
           title="Payment Methods"
@@ -257,6 +259,9 @@ export default function WalletScreen() {
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  scroll: {
     flex: 1,
   },
   balanceCard: {
