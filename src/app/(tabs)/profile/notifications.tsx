@@ -1,54 +1,71 @@
-import { useState } from "react";
 import { ScrollView, StyleSheet, Switch, View } from "react-native";
 import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { PlainHeader } from "@/components/plain-header";
+import { useToast } from "@/components/toast";
 import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
+import { useUpdateProfile } from "@/hooks/use-profile";
 import { useTheme } from "@/hooks/use-theme";
+import { ApiError, type NotificationPrefs } from "@/lib/api";
+import { useAuth } from "@/state/auth";
 
-const GROUPS: { title: string; items: { id: string; label: string }[] }[] = [
+// The preferences the server stores. TODO: the design has more switches
+// (entry updates, wallet activity and others) that the API can't save yet.
+const GROUPS: {
+  title: string;
+  items: { key: keyof NotificationPrefs; label: string }[];
+}[] = [
   {
     title: "Draws & Entries",
     items: [
-      { id: "draw-reminders", label: "Draw reminders" },
-      { id: "draw-results", label: "Draw results" },
-      { id: "entry-updates", label: "Entry updates" },
+      { key: "drawReminders", label: "Draw reminders" },
+      { key: "winnerAnnouncements", label: "Winner announcements" },
     ],
   },
   {
-    title: "Wallets & Transactions",
+    title: "How we reach you",
     items: [
-      { id: "wallet-activity", label: "Wallet activity" },
-      { id: "purchases", label: "Purchase notifications" },
-      { id: "withdrawals", label: "Withdrawal updates" },
-    ],
-  },
-  {
-    title: "Account & Vouccom",
-    items: [
-      { id: "account-security", label: "Account & security" },
-      { id: "promotions", label: "Promotions & offers" },
+      { key: "email", label: "Email notifications" },
+      { key: "sms", label: "SMS notifications" },
     ],
   },
   {
     title: "Marketing & Promotions",
-    items: [
-      { id: "promo-emails", label: "Promotional emails" },
-      { id: "promo-push", label: "Promotional push notifications" },
-      { id: "announcements", label: "Special offers and announcements" },
-    ],
+    items: [{ key: "promotional", label: "Promotions & offers" }],
   },
 ];
 
 export default function NotificationsScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const toast = useToast();
+  const { user, updateUser } = useAuth();
+  const save = useUpdateProfile();
 
-  // Everything starts on. TODO: load and save these on the backend.
-  const [enabled, setEnabled] = useState<Record<string, boolean>>(() =>
-    Object.fromEntries(GROUPS.flatMap((g) => g.items.map((i) => [i.id, true]))),
-  );
+  const prefs = user?.notificationPrefs;
+
+  // Flip the switch straight away; put it back if saving fails.
+  const toggle = (key: keyof NotificationPrefs, value: boolean) => {
+    if (!user || !prefs) return;
+    const before = user;
+    updateUser({ ...user, notificationPrefs: { ...prefs, [key]: value } });
+    save.mutate(
+      { notificationPrefs: { [key]: value } },
+      {
+        onError: (error) => {
+          updateUser(before);
+          toast.show({
+            tone: "error",
+            message:
+              error instanceof ApiError
+                ? error.message
+                : "Couldn't save that change. Please try again.",
+          });
+        },
+      },
+    );
+  };
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -74,7 +91,7 @@ export default function NotificationsScreen() {
             </Text>
             {group.items.map((item, i) => (
               <View
-                key={item.id}
+                key={item.key}
                 style={[
                   styles.row,
                   i > 0 && {
@@ -88,10 +105,9 @@ export default function NotificationsScreen() {
                 </Text>
                 <Switch
                   accessibilityLabel={item.label}
-                  value={enabled[item.id]}
-                  onValueChange={(value) =>
-                    setEnabled((s) => ({ ...s, [item.id]: value }))
-                  }
+                  value={prefs?.[item.key] ?? false}
+                  disabled={!prefs}
+                  onValueChange={(value) => toggle(item.key, value)}
                   trackColor={{ false: theme.chip, true: theme.accent }}
                   thumbColor="#FFFFFF"
                   ios_backgroundColor={theme.chip}

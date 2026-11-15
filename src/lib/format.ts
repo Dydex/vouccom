@@ -56,3 +56,9 @@ export function timeAgo(date: Date, now = new Date()): string {
   if (days < 7) return `${days} days ago`;
   return `${date.getDate()} ${SHORT_MONTHS[date.getMonth()]}`;
 }
+
+/** "8031234567" -> "•••••• 4567" */
+export function maskPhone(phone: string): string {
+  const digits = phone.replace(/\D/g, "");
+  return digits.length > 4 ? `•••••• ${digits.slice(-4)}` : phone;
+}

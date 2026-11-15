@@ -1,5 +1,6 @@
 import Constants from "expo-constants";
 import { Image } from "expo-image";
+import * as ImagePicker from "expo-image-picker";
 import { router } from "expo-router";
 import { SymbolView, type SymbolViewProps } from "expo-symbols";
 import type { ReactNode } from "react";
@@ -7,10 +8,14 @@ import { Alert, Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import { Avatar } from "@/components/avatar";
 import { PhoneIcon } from "@/components/phone-icon";
+import { useToast } from "@/components/toast";
 import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
 import { USER } from "@/data/user";
+import { useUploadAvatar } from "@/hooks/use-profile";
 import { useTheme } from "@/hooks/use-theme";
+import { ApiError, MAX_AVATAR_BYTES } from "@/lib/api";
 import { useAuth } from "@/state/auth";
 
 const SIDE = 20;
@@ -160,6 +165,46 @@ function confirmLogOut(signOut: () => Promise<void>) {
 export default function ProfileScreen() {
   const theme = useTheme();
   const { user, signOut } = useAuth();
+  const toast = useToast();
+  const avatar = useUploadAvatar();
+
+  const changePhoto = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      // A square crop, since the photo shows in a circle.
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.8,
+    });
+    if (result.canceled) return;
+    const asset = result.assets[0];
+    if (asset.fileSize !== undefined && asset.fileSize > MAX_AVATAR_BYTES) {
+      toast.show({
+        tone: "error",
+        message: "That photo is larger than 5MB. Please choose a smaller one.",
+      });
+      return;
+    }
+    avatar.mutate(
+      {
+        uri: asset.uri,
+        name: asset.fileName ?? "avatar.jpg",
+        mimeType: asset.mimeType ?? "image/jpeg",
+      },
+      {
+        onSuccess: () =>
+          toast.show({ tone: "success", message: "Profile photo updated." }),
+        onError: (error) =>
+          toast.show({
+            tone: "error",
+            message:
+              error instanceof ApiError
+                ? error.message
+                : "Couldn't upload your photo. Please try again.",
+          }),
+      },
+    );
+  };
   // Falls back to sample data until the user has loaded.
   const firstName = user?.profile.firstName ?? USER.firstName;
   const fullName = user
@@ -193,14 +238,17 @@ export default function ProfileScreen() {
         {/* Who you are */}
         <View style={styles.identity}>
           <View>
-            {/* TODO: show the user's photo once it comes from the backend. */}
-            <View style={[styles.avatar, { backgroundColor: theme.coral }]}>
-              <Text style={styles.avatarText}>{firstName[0]}</Text>
-            </View>
+            <Avatar
+              size={92}
+              name={firstName}
+              url={user?.profile.avatarUrl}
+              loading={avatar.isPending}
+            />
             <Pressable
               accessibilityRole="button"
-              accessibilityLabel="Edit photo"
-              // TODO: change the profile photo.
+              accessibilityLabel="Change profile photo"
+              disabled={avatar.isPending}
+              onPress={changePhoto}
               style={[styles.editBadge, { backgroundColor: theme.menu }]}
             >
               <SymbolView
@@ -314,18 +362,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     gap: Spacing.three,
     marginBottom: Spacing.four,
-  },
-  avatar: {
-    width: 92,
-    height: 92,
-    borderRadius: 46,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: {
-    fontSize: 38,
-    fontWeight: "700",
-    color: "#1E1F20",
   },
   editBadge: {
     position: "absolute",

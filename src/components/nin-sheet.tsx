@@ -15,46 +15,8 @@ import { Spacing } from "@/constants/theme";
 import { useVerifyNin } from "@/hooks/use-kyc";
 import { useTheme } from "@/hooks/use-theme";
 import { ApiError, NIGERIAN_STATES, type NigerianState } from "@/lib/api";
+import { digitsFromIso, formatDob, parseDob } from "@/lib/dates";
 import { useAuth } from "@/state/auth";
-
-const MIN_AGE = 18;
-
-/** "01011990" -> "01/01/1990" as the user types. */
-function formatDob(digits: string) {
-  return [digits.slice(0, 2), digits.slice(2, 4), digits.slice(4, 8)]
-    .filter(Boolean)
-    .join("/");
-}
-
-/** "1990-01-01..." -> "01011990" */
-function digitsFromIso(iso: string | null | undefined) {
-  const m = iso?.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  return m ? `${m[3]}${m[2]}${m[1]}` : "";
-}
-
-/** "01011990" -> "1990-01-01", or an error for impossible or under-18 dates. */
-function parseDob(
-  digits: string,
-  now = new Date(),
-): { iso: string } | { error: string } {
-  if (digits.length !== 8) return { error: "Enter your date of birth." };
-  const day = Number(digits.slice(0, 2));
-  const month = Number(digits.slice(2, 4));
-  const year = Number(digits.slice(4, 8));
-  const date = new Date(year, month - 1, day);
-  if (
-    date.getFullYear() !== year ||
-    date.getMonth() !== month - 1 ||
-    date.getDate() !== day
-  ) {
-    return { error: "That date doesn't exist." };
-  }
-  const adult = new Date(year + MIN_AGE, month - 1, day);
-  if (adult > now) return { error: `You must be ${MIN_AGE} or over.` };
-  return {
-    iso: `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
-  };
-}
 
 type NinSheetProps = {
   visible: boolean;

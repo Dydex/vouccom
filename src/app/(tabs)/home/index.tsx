@@ -15,6 +15,7 @@ import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import { ActivityRow } from "@/components/activity-row";
+import { Avatar } from "@/components/avatar";
 import { DrawRow } from "@/components/draw-row";
 import { EntryDetailsSheet } from "@/components/entry-details-sheet";
 import { EntryRow } from "@/components/entry-row";
@@ -128,9 +129,7 @@ export default function HomeScreen() {
         ]}
       >
         <View style={styles.greetingRow}>
-          <View style={[styles.avatar, { backgroundColor: theme.coral }]}>
-            <Text style={styles.avatarText}>{firstName[0]}</Text>
-          </View>
+          <Avatar size={41} name={firstName} url={user?.profile.avatarUrl} />
           <Text style={[styles.greeting, { color: theme.text }]}>
             Hello {firstName},
           </Text>
@@ -496,18 +495,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: Spacing.two,
-  },
-  avatar: {
-    width: 41,
-    height: 41,
-    borderRadius: 21,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  avatarText: {
-    fontSize: 18,
-    fontWeight: "700",
-    color: "#1E1F20",
   },
   greeting: {
     flex: 1,

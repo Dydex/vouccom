@@ -16,29 +16,8 @@ import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
 import { useKyc } from "@/hooks/use-kyc";
 import { useTheme } from "@/hooks/use-theme";
 import type { KycStatus } from "@/lib/api";
+import { formatCalendarDate } from "@/lib/dates";
 import { useAuth } from "@/state/auth";
-
-const MONTHS = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
-/** "1990-01-01..." -> "1 Jan 1990" (read as a calendar date, not a time). */
-function formatDate(iso: string | null | undefined) {
-  const m = iso?.match(/^(\d{4})-(\d{2})-(\d{2})/);
-  if (!m) return undefined;
-  return `${Number(m[3])} ${MONTHS[Number(m[2]) - 1]} ${m[1]}`;
-}
 
 const TITLES: Record<KycStatus, string> = {
   verified: "NIN Verified",
@@ -75,9 +54,12 @@ export default function NinDetailsScreen() {
   // The API doesn't send the NIN back, so it isn't shown.
   const details = [
     { label: "Name on NIN", value: name },
-    { label: "Date of birth", value: formatDate(user?.profile.dateOfBirth) },
+    {
+      label: "Date of birth",
+      value: formatCalendarDate(user?.profile.dateOfBirth),
+    },
     { label: "State of origin", value: kyc.data?.state },
-    { label: "Verified on", value: formatDate(kyc.data?.verifiedAt) },
+    { label: "Verified on", value: formatCalendarDate(kyc.data?.verifiedAt) },
   ].filter((row): row is { label: string; value: string } => !!row.value);
 
   return (

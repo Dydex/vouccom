@@ -16,6 +16,7 @@ import {
   getMe,
   login,
   logout,
+  logoutAll,
   setAuthToken,
   type User,
 } from "@/lib/api";
@@ -41,6 +42,10 @@ type AuthContextValue = {
   signIn: (email: string, password: string, remember: boolean) => Promise<void>;
   signOut: () => Promise<void>;
   refreshUser: () => Promise<unknown>;
+  /** Replaces the user with one the server just sent back. */
+  updateUser: (user: User) => void;
+  /** Ends every session on every device. Throws (and stays signed in) on failure. */
+  signOutEverywhere: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -143,9 +148,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await clearSession();
   }, [clearSession]);
 
+  const signOutEverywhere = useCallback(async () => {
+    // Needs the session, so before ending it.
+    await unregisterFromPush();
+    await logoutAll();
+    await clearSession();
+  }, [clearSession]);
+
   const value = useMemo(
-    () => ({ status, user, signIn, signOut, refreshUser: () => loadUser() }),
-    [status, user, signIn, signOut, loadUser],
+    () => ({
+      status,
+      user,
+      signIn,
+      signOut,
+      refreshUser: () => loadUser(),
+      updateUser: setUser,
+      signOutEverywhere,
+    }),
+    [status, user, signIn, signOut, loadUser, signOutEverywhere],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

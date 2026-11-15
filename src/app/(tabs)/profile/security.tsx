@@ -1,5 +1,6 @@
 import { Image } from "expo-image";
 import { router } from "expo-router";
+import { SymbolView } from "expo-symbols";
 import { useState, type ReactNode } from "react";
 import { Pressable, ScrollView, StyleSheet, Switch, View } from "react-native";
 import { Text } from "@/components/text";
@@ -59,6 +60,19 @@ export default function SecurityPrivacyScreen() {
       kind: "link",
       // Opens the same screen as "forgot password" for now.
       onPress: () => router.push("/changePassword"),
+    },
+    {
+      id: "devices",
+      label: "Signed-in devices",
+      icon: (
+        <SymbolView
+          name={{ ios: "iphone", android: "smartphone", web: "smartphone" }}
+          tintColor={theme.text}
+          size={16}
+        />
+      ),
+      kind: "link",
+      onPress: () => router.push("/profile/devices"),
     },
     {
       id: "biometric",

@@ -186,7 +186,77 @@ export type User = {
   emailVerifiedAt: string | null;
   phoneVerifiedAt: string | null;
   kyc?: { status: KycStatus };
+  notificationPrefs?: NotificationPrefs;
 };
+
+/** What the user wants to hear about, and how. */
+export type NotificationPrefs = {
+  email: boolean;
+  sms: boolean;
+  promotional: boolean;
+  drawReminders: boolean;
+  winnerAnnouncements: boolean;
+};
+
+export type ProfileUpdate = {
+  firstName?: string;
+  lastName?: string;
+  address?: string | null;
+  city?: string | null;
+  country?: string | null;
+  /** YYYY-MM-DD */
+  dateOfBirth?: string | null;
+  /** Only the preferences being changed. */
+  notificationPrefs?: Partial<NotificationPrefs>;
+};
+
+/** Only for accounts created without a phone (409 otherwise). Returns the updated user. */
+export function addPhone(phone: string) {
+  return request<{ user: User }>("/auth/me/phone", {
+    method: "POST",
+    body: { phone },
+  });
+}
+
+/**
+ * Texts a 6-digit code. SMS isn't live yet: `sent` is false, and outside
+ * production `devCode` holds the code instead.
+ */
+export function requestPhoneCode(phone: string) {
+  return request<{ sent: boolean; devCode?: string }>(
+    "/auth/verify/phone/request",
+    { method: "POST", body: { phone } },
+  );
+}
+
+export function verifyPhone(phone: string, code: string) {
+  return request<{ verified: boolean }>("/auth/verify/phone", {
+    method: "POST",
+    body: { phone, code },
+  });
+}
+
+export const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
+
+/** JPG, PNG or WebP, up to 5 MB. Returns the updated user. */
+export function uploadAvatar(file: LocalFile) {
+  const form = new FormData();
+  form.append("file", {
+    uri: file.uri,
+    name: file.name,
+    type: file.mimeType ?? "image/jpeg",
+  } as unknown as Blob);
+  return request<{ user: User }>("/auth/me/avatar", {
+    method: "POST",
+    body: form,
+    timeoutMs: 60_000,
+  });
+}
+
+/** Updates only the fields sent. Returns the updated user. */
+export function updateMe(update: ProfileUpdate) {
+  return request<{ user: User }>("/auth/me", { method: "PATCH", body: update });
+}
 
 export function login(email: string, password: string) {
   return request<{ user: User; token?: string }>("/auth/login", {
@@ -263,6 +333,33 @@ export function getMe(options: { timeoutMs?: number } = {}) {
 
 export function logout() {
   return request<{ ok: boolean }>("/auth/logout", { method: "POST" });
+}
+
+/** Ends every session, including this one. */
+export function logoutAll() {
+  return request<{ ok: boolean }>("/auth/logout-all", { method: "POST" });
+}
+
+/** A signed-in device. */
+export type Session = {
+  id: string;
+  /** The session making this request: this phone. */
+  current: boolean;
+  ip: string | null;
+  userAgent: string | null;
+  lastSeenAt: string;
+  createdAt: string;
+};
+
+export function getSessions() {
+  return request<{ sessions: Session[] }>("/auth/sessions");
+}
+
+/** Signs one device out. Also succeeds if it was already gone. */
+export function revokeSession(id: string) {
+  return request<{ ok: boolean }>(`/auth/sessions/${encodeURIComponent(id)}`, {
+    method: "DELETE",
+  });
 }
 
 // --- Listings ---

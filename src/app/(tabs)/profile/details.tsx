@@ -1,77 +1,130 @@
+import * as Clipboard from "expo-clipboard";
 import { Image } from "expo-image";
+import { router } from "expo-router";
+import { useState } from "react";
 import { Pressable, ScrollView, StyleSheet, View } from "react-native";
 import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
+import {
+  EditProfileSheet,
+  type ProfileSection,
+} from "@/components/edit-profile-sheet";
 import { PlainHeader } from "@/components/plain-header";
+import { useToast } from "@/components/toast";
 import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
-import { USER } from "@/data/user";
 import { useTheme } from "@/hooks/use-theme";
+import { formatCalendarDate } from "@/lib/dates";
+import { useAuth } from "@/state/auth";
 
 type Field = {
   id: string;
   label: string;
   value: string;
   verified?: boolean;
-  action: { label: string; icon: number };
+  action?: { label: string; icon: number; onPress: () => void };
 };
 
-const EDIT = {
-  label: "Edit",
-  icon: require("@/assets/images/profile/Edit.png"),
-};
-
-const FIELDS: Field[] = [
-  { id: "name", label: "Account name", value: USER.fullName, action: EDIT },
-  {
-    id: "phone",
-    label: "Phone number",
-    value: USER.phone,
-    verified: USER.phoneVerified,
-    action: EDIT,
-  },
-  {
-    id: "email",
-    label: "Email",
-    value: USER.email,
-    verified: USER.emailVerified,
-    action: EDIT,
-  },
-  {
-    id: "address",
-    label: "Address",
-    value: USER.address,
-    verified: USER.addressVerified,
-    action: EDIT,
-  },
-  {
-    id: "dob",
-    label: "Date of birth",
-    value: USER.dateOfBirth,
-    verified: USER.dateOfBirthVerified,
-    action: {
-      label: "Change date of birth",
-      icon: require("@/assets/images/profile/Date.png"),
-    },
-  },
-  {
-    id: "userId",
-    label: "User ID",
-    value: USER.userId,
-    action: {
-      label: "Copy user ID",
-      icon: require("@/assets/images/profile/Copy.png"),
-    },
-  },
-];
+const EDIT_ICON = require("@/assets/images/profile/Edit.png");
 
 export default function ProfileDetailsScreen() {
   const theme = useTheme();
   const insets = useSafeAreaInsets();
+  const toast = useToast();
+  const { user } = useAuth();
+  const [editing, setEditing] = useState<ProfileSection>("name");
+  const [editOpen, setEditOpen] = useState(false);
 
-  // TODO: every action needs its flow: editing a field, picking a date, and
-  // copying the user ID (copying needs the expo-clipboard package).
-  const onAction = (_id: string) => {};
+  const edit = (section: ProfileSection) => {
+    setEditing(section);
+    setEditOpen(true);
+  };
+
+  const p = user?.profile;
+  const address = [p?.address, p?.city, p?.country].filter(Boolean).join(", ");
+  // A verified NIN confirmed the date of birth, so it can't change after.
+  const identityVerified = user?.kyc?.status === "verified";
+
+  const fields: Field[] = [
+    {
+      id: "name",
+      label: "Account name",
+      value: p ? `${p.firstName} ${p.lastName}` : "...",
+      action: { label: "Edit", icon: EDIT_ICON, onPress: () => edit("name") },
+    },
+    {
+      id: "phone",
+      label: "Phone number",
+      value: user?.phone ?? "Not added",
+      verified: !!user?.phoneVerifiedAt,
+      // The API can add a phone or verify it, but not change a verified one.
+      action:
+        user && !user.phoneVerifiedAt
+          ? {
+              label: user.phone ? "Verify phone number" : "Add phone number",
+              icon: EDIT_ICON,
+              onPress: () => router.push("/profile/phone"),
+            }
+          : undefined,
+    },
+    {
+      id: "email",
+      label: "Email",
+      value: user?.email ?? "...",
+      verified: !!user?.emailVerifiedAt,
+      // The API can't change the email, only verify it.
+      action:
+        user && !user.emailVerifiedAt
+          ? {
+              label: "Verify email",
+              icon: EDIT_ICON,
+              onPress: () =>
+                router.push({
+                  pathname: "/verifyEmail",
+                  params: { email: user.email, from: "reminder" },
+                }),
+            }
+          : undefined,
+    },
+    {
+      id: "address",
+      label: "Address",
+      value: address || "Not added",
+      action: {
+        label: "Edit",
+        icon: EDIT_ICON,
+        onPress: () => edit("address"),
+      },
+    },
+    {
+      id: "dob",
+      label: "Date of birth",
+      value: formatCalendarDate(p?.dateOfBirth) ?? "Not added",
+      verified: identityVerified,
+      action: identityVerified
+        ? undefined
+        : {
+            label: "Change date of birth",
+            icon: require("@/assets/images/profile/Date.png"),
+            onPress: () => edit("dob"),
+          },
+    },
+    {
+      id: "userId",
+      label: "User ID",
+      value: user?.id ?? "...",
+      action: user
+        ? {
+            label: "Copy user ID",
+            icon: require("@/assets/images/profile/Copy.png"),
+            onPress: async () => {
+              await Clipboard.setStringAsync(user.id);
+              toast.show({ tone: "success", message: "User ID copied." });
+            },
+          }
+        : undefined,
+    },
+  ];
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -87,7 +140,7 @@ export default function ProfileDetailsScreen() {
           },
         ]}
       >
-        {FIELDS.map((field) => (
+        {fields.map((field) => (
           <View
             key={field.id}
             style={[styles.row, { backgroundColor: theme.card }]}
@@ -114,22 +167,31 @@ export default function ProfileDetailsScreen() {
                 />
               </View>
             )}
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel={`${field.action.label}: ${field.label}`}
-              hitSlop={10}
-              onPress={() => onAction(field.id)}
-            >
-              <Image
-                source={field.action.icon}
-                style={styles.actionIcon}
-                contentFit="contain"
-                tintColor={theme.text}
-              />
-            </Pressable>
+            {field.action && (
+              <Pressable
+                accessibilityRole="button"
+                accessibilityLabel={`${field.action.label}: ${field.label}`}
+                hitSlop={10}
+                onPress={field.action.onPress}
+              >
+                <Image
+                  source={field.action.icon}
+                  style={styles.actionIcon}
+                  contentFit="contain"
+                  tintColor={theme.text}
+                />
+              </Pressable>
+            )}
           </View>
         ))}
       </ScrollView>
+
+      <EditProfileSheet
+        visible={editOpen}
+        onClose={() => setEditOpen(false)}
+        section={editing}
+        user={user}
+      />
     </View>
   );
 }
