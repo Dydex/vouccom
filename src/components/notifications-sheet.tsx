@@ -1,3 +1,4 @@
+import { Image } from "expo-image";
 import { router } from "expo-router";
 import { SymbolView, type SymbolViewProps } from "expo-symbols";
 import { useEffect } from "react";
@@ -18,40 +19,36 @@ import { targetFor } from "@/lib/notifications";
 
 type Theme = ReturnType<typeof useTheme>;
 
-function iconFor(
-  type: NotificationType,
-  theme: Theme,
-): { name: SymbolViewProps["name"]; color: string } {
+type Icon =
+  | { image: number; tint?: string; size: number }
+  | { symbol: SymbolViewProps["name"]; tint: string };
+
+function iconFor(type: NotificationType, theme: Theme): Icon {
   switch (type) {
     case "listing_live":
     case "draw_result":
       return {
-        name: {
-          ios: "play.circle",
-          android: "play_circle",
-          web: "play_circle",
-        },
-        color: theme.coral,
+        image: require("@/assets/images/notifications/Media.png"),
+        size: 20, // 4x export (80x80), already coral
       };
     case "wallet_funded":
     case "voucher_purchased":
       return {
-        name: {
-          ios: "checkmark.circle",
-          android: "check_circle",
-          web: "check_circle",
-        },
-        color: theme.moneyIn,
+        // White, so it's tinted: the design's green.
+        image: require("@/assets/images/common/Successful.png"),
+        tint: theme.accent,
+        size: 20,
       };
     case "prize_won":
       return {
-        name: { ios: "star", android: "star", web: "star" },
-        color: theme.badgeSoon,
+        image: require("@/assets/images/wins/Star.png"),
+        size: 18, // 4x export (72x70), already yellow
       };
+    // TODO: "Support.png" for support replies, once the API has that type.
     default:
       return {
-        name: { ios: "person", android: "person", web: "person" },
-        color: theme.text,
+        symbol: { ios: "person", android: "person", web: "person" },
+        tint: theme.text,
       };
   }
 }
@@ -152,11 +149,20 @@ export function NotificationsSheet({
                 style={({ pressed }) => [styles.row, pressed && styles.pressed]}
               >
                 <View style={[styles.icon, { backgroundColor: theme.card }]}>
-                  <SymbolView
-                    name={icon.name}
-                    tintColor={icon.color}
-                    size={18}
-                  />
+                  {"image" in icon ? (
+                    <Image
+                      source={icon.image}
+                      style={{ width: icon.size, height: icon.size }}
+                      contentFit="contain"
+                      tintColor={icon.tint}
+                    />
+                  ) : (
+                    <SymbolView
+                      name={icon.symbol}
+                      tintColor={icon.tint}
+                      size={18}
+                    />
+                  )}
                 </View>
                 <Text
                   numberOfLines={1}
