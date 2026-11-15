@@ -18,20 +18,24 @@ import { ActivityRow } from "@/components/activity-row";
 import { DrawRow } from "@/components/draw-row";
 import { EntryRow } from "@/components/entry-row";
 import { ListingCard } from "@/components/listing-card";
+import { NotificationsSheet } from "@/components/notifications-sheet";
 import { SectionBar } from "@/components/section-bar";
 import { useToast } from "@/components/toast";
 import { TopUpSheet } from "@/components/top-up-sheet";
 import { VerifyEmailBanner } from "@/components/verify-email-banner";
+import { WinClaimSheet } from "@/components/win-claim-sheet";
 import { formatNaira } from "@/constants/currency";
 import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
 import { ACTIVITY, DRAWS } from "@/data/draws";
-import { WINS } from "@/data/entries";
 import { USER } from "@/data/user";
 import type { Listing } from "@/data/listings";
 import { useEntries } from "@/hooks/use-entries";
 import { useListings } from "@/hooks/use-listings";
+import { useNotifications } from "@/hooks/use-notifications";
 import { useTheme } from "@/hooks/use-theme";
 import { useWallet } from "@/hooks/use-wallet";
+import { useWinnings } from "@/hooks/use-winnings";
+import type { Win } from "@/lib/winnings";
 import { useAuth } from "@/state/auth";
 
 const SIDE = 20;
@@ -60,6 +64,16 @@ export default function HomeScreen() {
 
   const wallet = useWallet();
   const [topUpOpen, setTopUpOpen] = useState(false);
+  const notifications = useNotifications();
+  const unreadCount =
+    notifications.data?.unreadCount ??
+    notifications.data?.notifications.filter((n) => !n.read).length ??
+    0;
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const winnings = useWinnings();
+  const latestWin = winnings.data?.[0];
+  const [claimWin, setClaimWin] = useState<Win>();
+  const [claimOpen, setClaimOpen] = useState(false);
   const balance = wallet.data && wallet.data.balanceKobo / 100;
   const entriesQuery = useEntries();
   const activeEntries = useMemo(
@@ -76,6 +90,8 @@ export default function HomeScreen() {
       refreshUser(),
       entriesQuery.refetch(),
       wallet.refetch(),
+      winnings.refetch(),
+      notifications.refetch(),
     ]);
     if (!ok) {
       toast.show({
@@ -119,7 +135,12 @@ export default function HomeScreen() {
           </Pressable>
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Notifications"
+            accessibilityLabel={
+              unreadCount > 0
+                ? `Notifications, ${unreadCount} unread`
+                : "Notifications"
+            }
+            onPress={() => setNotificationsOpen(true)}
             style={[styles.roundButton, { backgroundColor: theme.greyButton }]}
           >
             <SymbolView
@@ -132,6 +153,17 @@ export default function HomeScreen() {
               weight="bold"
               size={18}
             />
+            {unreadCount > 0 && (
+              <View
+                style={[
+                  styles.unreadDot,
+                  {
+                    backgroundColor: theme.coral,
+                    borderColor: theme.greyButton,
+                  },
+                ]}
+              />
+            )}
           </Pressable>
         </View>
 
@@ -264,9 +296,32 @@ export default function HomeScreen() {
           onAction={() => router.push("/home/myWins")}
         />
         <View style={styles.rowList}>
-          {WINS.slice(0, 1).map((win) => (
-            <EntryRow key={win.id} entry={win} />
-          ))}
+          {winnings.isPending ? (
+            <ActivityIndicator style={styles.rowLoading} color={theme.brand} />
+          ) : winnings.isError && !winnings.data ? (
+            <Pressable
+              accessibilityRole="button"
+              onPress={() => winnings.refetch()}
+            >
+              <Text
+                style={[styles.rowStateText, { color: theme.textSecondary }]}
+              >
+                Couldn't load your wins. Tap to try again.
+              </Text>
+            </Pressable>
+          ) : latestWin ? (
+            <EntryRow
+              entry={latestWin}
+              onViewDetails={() => {
+                setClaimWin(latestWin);
+                setClaimOpen(true);
+              }}
+            />
+          ) : (
+            <Text style={[styles.rowStateText, { color: theme.textSecondary }]}>
+              No wins yet. Your next entry could be the one!
+            </Text>
+          )}
         </View>
 
         {/* Recent activity */}
@@ -285,6 +340,17 @@ export default function HomeScreen() {
       </ScrollView>
 
       <TopUpSheet visible={topUpOpen} onClose={() => setTopUpOpen(false)} />
+
+      <NotificationsSheet
+        visible={notificationsOpen}
+        onClose={() => setNotificationsOpen(false)}
+      />
+
+      <WinClaimSheet
+        visible={claimOpen}
+        onClose={() => setClaimOpen(false)}
+        win={claimWin}
+      />
     </View>
   );
 }
@@ -393,6 +459,15 @@ const styles = StyleSheet.create({
     borderRadius: 19,
     alignItems: "center",
     justifyContent: "center",
+  },
+  unreadDot: {
+    position: "absolute",
+    top: 8,
+    right: 9,
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+    borderWidth: 1.5,
   },
   searchIcon: {
     width: 18,

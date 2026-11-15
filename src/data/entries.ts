@@ -30,17 +30,3 @@ export function entryMeta(entry: Entry): string {
   const days = entry.daysLeft ?? 0;
   return `${count} · ${days} ${days === 1 ? "day" : "days"} left`;
 }
-
-// TODO: replace with the user's won draws from the backend.
-export const WINS: Entry[] = ["w1", "w2", "w3"].map((id) => ({
-  id,
-  title: "UK Used 2026 Honda Civic",
-  entries: 45,
-  status: "completed",
-  category: "cars",
-  brand: "Honda",
-  voucherPrice: 500,
-  assetValue: 900_000,
-  won: true,
-  enteredDaysAgo: 0,
-}));

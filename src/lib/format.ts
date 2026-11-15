@@ -21,3 +21,38 @@ export function formatTickets(numbers: number[], shown = 3): string {
   const rest = sorted.length - shown;
   return rest > 0 ? `${listed} +${rest} more` : listed;
 }
+
+const SHORT_MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+/** "Just now", "30 mins ago", "9:05am", "yesterday", "3 days ago" or "1 Sep". */
+export function timeAgo(date: Date, now = new Date()): string {
+  const minutes = Math.floor((now.getTime() - date.getTime()) / 60_000);
+  if (minutes < 1) return "Just now";
+  if (minutes < 60) return minutes === 1 ? "1 min ago" : `${minutes} mins ago`;
+
+  const days = Math.round(
+    (new Date(now).setHours(0, 0, 0, 0) - new Date(date).setHours(0, 0, 0, 0)) /
+      86_400_000,
+  );
+  if (days <= 0) {
+    const hours = date.getHours();
+    const mins = String(date.getMinutes()).padStart(2, "0");
+    return `${hours % 12 || 12}:${mins}${hours < 12 ? "am" : "pm"}`;
+  }
+  if (days === 1) return "yesterday";
+  if (days < 7) return `${days} days ago`;
+  return `${date.getDate()} ${SHORT_MONTHS[date.getMonth()]}`;
+}

@@ -63,7 +63,11 @@ export async function request<T>(
     "X-Client-Type": "mobile",
     ...extraHeaders,
   };
-  if (body !== undefined) headers["Content-Type"] = "application/json";
+  // FormData sets its own Content-Type, with the multipart boundary.
+  const isForm = body instanceof FormData;
+  if (body !== undefined && !isForm) {
+    headers["Content-Type"] = "application/json";
+  }
   if (authToken) headers.Authorization = `Bearer ${authToken}`;
 
   const controller = new AbortController();
@@ -74,7 +78,8 @@ export async function request<T>(
     response = await fetch(`${API_URL}${path}`, {
       method,
       headers,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body:
+        body === undefined ? undefined : isForm ? body : JSON.stringify(body),
       signal: controller.signal,
     });
   } catch {
@@ -528,6 +533,127 @@ export function getCheckoutStatus(reference: string) {
   return request<{ status: CheckoutStatus; amountKobo: number }>(
     `/cart/checkout/${encodeURIComponent(reference)}`,
   );
+}
+
+// --- Winnings ---
+
+export type WinStatus =
+  "selected" | "claimed" | "approved" | "delivered" | "forfeited";
+
+export type ApiWinning = {
+  id: string;
+  /** "selected" until the winner claims, then "claimed", "approved", "delivered". */
+  status: WinStatus;
+  /** Vouchers the user held. */
+  quantity: number;
+  /** Vouchers sold in the draw. */
+  totalEntries: number;
+  selectedAt: string;
+  claimDeadline: string;
+  /** Set when staff asked for new documents. */
+  documentsRequestReason: string | null;
+  claimedAt: string | null;
+  approvedAt: string | null;
+  deliveredAt: string | null;
+  drawVideoUrl: string | null;
+  winningTicketNumber: number;
+  /** The claim window passed without a claim. */
+  expired: boolean;
+  listing: ApiListing | null;
+};
+
+export function getMyWinnings() {
+  return request<{ winnings: ApiWinning[] }>("/winners/mine");
+}
+
+export const CLAIM_DOCUMENT_TYPES = [
+  "image/jpeg",
+  "image/png",
+  "image/webp",
+  "application/pdf",
+];
+export const MAX_CLAIM_DOCUMENT_BYTES = 2 * 1024 * 1024;
+
+/** A file picked on the phone. */
+export type LocalFile = { uri: string; name: string; mimeType?: string };
+
+/** Stores a government ID or proof of address privately. Returns its private url. */
+export function uploadClaimDocument(file: LocalFile) {
+  const form = new FormData();
+  // React Native uploads a local file from this { uri, name, type } shape.
+  form.append("file", {
+    uri: file.uri,
+    name: file.name,
+    type: file.mimeType ?? "application/octet-stream",
+  } as unknown as Blob);
+  return request<{ url: string; resourceType: string }>(
+    "/uploads/claim-document",
+    { method: "POST", body: form, timeoutMs: 60_000 },
+  );
+}
+
+/** Requires verified KYC (403 otherwise) and must be sent before the claim deadline. */
+export function submitClaim(
+  winningId: string,
+  documents: {
+    governmentIdUrl: string;
+    proofOfAddressUrl: string;
+    deliveryAddress?: string;
+  },
+) {
+  return request<{ winner: { id: string; status: WinStatus } }>(
+    `/winners/${encodeURIComponent(winningId)}/claim`,
+    { method: "POST", body: documents },
+  );
+}
+
+// --- Notifications ---
+
+export type NotificationType =
+  | "wallet_funded"
+  | "voucher_purchased"
+  | "kyc_verified"
+  | "listing_live"
+  | "new_signup"
+  | "prize_won"
+  | "draw_result";
+
+export type ApiNotification = {
+  id: string;
+  type: NotificationType;
+  title: string;
+  body: string | null;
+  read: boolean;
+  /** Type-specific ids, e.g. `listingId` or `winnerId`. */
+  meta: Record<string, string> | null;
+  createdAt: string;
+};
+
+export type NotificationsPage = {
+  notifications: ApiNotification[];
+  total: number;
+  page: number;
+  pages: number;
+  unreadCount?: number;
+};
+
+export function getNotifications(page = 1, limit = 50) {
+  return request<NotificationsPage>(
+    `/notifications?page=${page}&limit=${limit}`,
+  );
+}
+
+export function markNotificationRead(id: string) {
+  return request<{ ok: boolean }>(
+    `/notifications/${encodeURIComponent(id)}/read`,
+    { method: "PATCH" },
+  );
+}
+
+export function markAllNotificationsRead() {
+  return request<{ ok: boolean }>("/notifications/read-all", {
+    method: "POST",
+  });
 }
 
 /** Saves (bookmarks) a listing, or removes it from saved. */

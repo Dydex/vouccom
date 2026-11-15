@@ -1,6 +1,15 @@
 import { SymbolView } from "expo-symbols";
 import type { ReactNode } from "react";
-import { KeyboardAvoidingView, Modal, Platform, Pressable, ScrollView, StyleSheet, useWindowDimensions, View } from "react-native";
+import {
+  KeyboardAvoidingView,
+  Modal,
+  Platform,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from "react-native";
 import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -28,10 +37,6 @@ export function BottomSheet({
   footer,
   tall,
 }: BottomSheetProps) {
-  const theme = useTheme();
-  const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
-
   return (
     <Modal
       transparent
@@ -40,67 +45,89 @@ export function BottomSheet({
       animationType="fade"
       onRequestClose={onClose}
     >
-      <KeyboardAvoidingView
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-        style={styles.backdrop}
-      >
-        <Pressable
-          style={StyleSheet.absoluteFill}
-          onPress={onClose}
-          accessibilityLabel={`Close ${title}`}
-        />
-
-        <View
-          style={[
-            styles.sheet,
-            { backgroundColor: theme.menu },
-            tall ? { height: height * 0.84 } : { maxHeight: height * 0.88 },
-          ]}
-        >
-          <View
-            style={[styles.header, { borderBottomColor: theme.greyButton }]}
-          >
-            <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
-            <Pressable
-              accessibilityRole="button"
-              accessibilityLabel="Close"
-              hitSlop={12}
-              onPress={onClose}
-            >
-              <SymbolView
-                name={{ ios: "xmark", android: "close", web: "close" }}
-                tintColor={theme.text}
-                size={20}
-              />
-            </Pressable>
-          </View>
-
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            style={tall ? styles.flex : styles.shrink}
-            contentContainerStyle={styles.content}
-          >
-            {children}
-          </ScrollView>
-
-          {footer && (
-            <View
-              style={[
-                styles.footer,
-                {
-                  // A background is needed for the shadow to show on iOS.
-                  backgroundColor: theme.menu,
-                  shadowColor: theme.brand,
-                  paddingBottom: Math.max(insets.bottom, 12) + Spacing.one,
-                },
-              ]}
-            >
-              {footer}
-            </View>
-          )}
-        </View>
-      </KeyboardAvoidingView>
+      <SheetLayout onClose={onClose} title={title} footer={footer} tall={tall}>
+        {children}
+      </SheetLayout>
     </Modal>
+  );
+}
+
+type SheetLayoutProps = Omit<BottomSheetProps, "visible">;
+
+/**
+ * The sheet itself, without the Modal: for screens that are routes, such as
+ * one opened from another sheet (iOS can't show two Modals at once).
+ */
+export function SheetLayout({
+  onClose,
+  title,
+  children,
+  footer,
+  tall,
+}: SheetLayoutProps) {
+  const theme = useTheme();
+  const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
+
+  return (
+    <KeyboardAvoidingView
+      behavior={Platform.OS === "ios" ? "padding" : undefined}
+      style={styles.backdrop}
+    >
+      <Pressable
+        style={StyleSheet.absoluteFill}
+        onPress={onClose}
+        accessibilityLabel={`Close ${title}`}
+      />
+
+      <View
+        style={[
+          styles.sheet,
+          { backgroundColor: theme.menu },
+          tall ? { height: height * 0.84 } : { maxHeight: height * 0.88 },
+        ]}
+      >
+        <View style={[styles.header, { borderBottomColor: theme.greyButton }]}>
+          <Text style={[styles.title, { color: theme.text }]}>{title}</Text>
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Close"
+            hitSlop={12}
+            onPress={onClose}
+          >
+            <SymbolView
+              name={{ ios: "xmark", android: "close", web: "close" }}
+              tintColor={theme.text}
+              size={20}
+            />
+          </Pressable>
+        </View>
+
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          style={tall ? styles.flex : styles.shrink}
+          contentContainerStyle={styles.content}
+        >
+          {children}
+        </ScrollView>
+
+        {footer && (
+          <View
+            style={[
+              styles.footer,
+              {
+                // A background is needed for the shadow to show on iOS.
+                backgroundColor: theme.menu,
+                shadowColor: theme.brand,
+                paddingBottom: Math.max(insets.bottom, 12) + Spacing.one,
+              },
+            ]}
+          >
+            {footer}
+          </View>
+        )}
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 

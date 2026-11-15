@@ -1,5 +1,12 @@
 import { useMemo, useState } from "react";
-import { FlatList, StyleSheet, View } from "react-native";
+import {
+  ActivityIndicator,
+  FlatList,
+  Pressable,
+  RefreshControl,
+  StyleSheet,
+  View,
+} from "react-native";
 import { Text } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
@@ -8,11 +15,14 @@ import { type FilterOption } from "@/components/filter-dropdown";
 import { FiltersSheet } from "@/components/filters-sheet";
 import { ListControls } from "@/components/list-controls";
 import { ListHeader } from "@/components/list-header";
+import { WinClaimSheet } from "@/components/win-claim-sheet";
 import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
 import { daysAgoRange, type DateFilter } from "@/data/date-filter";
-import { WINS } from "@/data/entries";
 import { DEFAULT_FILTERS, matchesFilters } from "@/data/filters";
 import { useTheme } from "@/hooks/use-theme";
+import { useWinnings } from "@/hooks/use-winnings";
+import { ApiError } from "@/lib/api";
+import type { Win } from "@/lib/winnings";
 
 const SIDE = 20;
 
@@ -29,15 +39,27 @@ export default function MyWinsScreen() {
   const insets = useSafeAreaInsets();
 
   const [query, setQuery] = useState("");
-  const [date, setDate] = useState<DateFilter>("today");
+  const [date, setDate] = useState<DateFilter>("all");
   const [status, setStatus] = useState<StatusFilter>("all");
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
+  const [claimWin, setClaimWin] = useState<Win>();
+  const [claimOpen, setClaimOpen] = useState(false);
+
+  const winnings = useWinnings();
+  const loaded = winnings.data;
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await winnings.refetch();
+    setRefreshing(false);
+  };
 
   const wins = useMemo(() => {
     const q = query.trim().toLowerCase();
     const [minDays, maxDays] = daysAgoRange(date);
-    return WINS.filter(
+    return (loaded ?? []).filter(
       (w) =>
         w.enteredDaysAgo >= minDays &&
         w.enteredDaysAgo <= maxDays &&
@@ -46,7 +68,7 @@ export default function MyWinsScreen() {
         (!q || w.title.toLowerCase().includes(q)) &&
         matchesFilters(w, filters),
     );
-  }, [query, date, status, filters]);
+  }, [loaded, query, date, status, filters]);
 
   return (
     <View style={[styles.container, { backgroundColor: theme.background }]}>
@@ -63,6 +85,13 @@ export default function MyWinsScreen() {
         keyExtractor={(item) => item.id}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={theme.brand}
+          />
+        }
         contentContainerStyle={[
           styles.listContent,
           {
@@ -88,11 +117,52 @@ export default function MyWinsScreen() {
           </View>
         }
         ListEmptyComponent={
-          <Text style={[styles.empty, { color: theme.textSecondary }]}>
-            No wins found
-          </Text>
+          winnings.isPending ? (
+            <ActivityIndicator
+              style={styles.loading}
+              size="large"
+              color={theme.brand}
+            />
+          ) : winnings.isError && !loaded ? (
+            <View style={styles.errorBox}>
+              <Text style={[styles.empty, { color: theme.textSecondary }]}>
+                {winnings.error instanceof ApiError
+                  ? winnings.error.message
+                  : "Couldn't load your wins."}
+              </Text>
+              <Pressable
+                accessibilityRole="button"
+                onPress={() => winnings.refetch()}
+                hitSlop={8}
+              >
+                <Text style={[styles.retryText, { color: theme.brand }]}>
+                  Try again
+                </Text>
+              </Pressable>
+            </View>
+          ) : (
+            <Text style={[styles.empty, { color: theme.textSecondary }]}>
+              {loaded?.length
+                ? "No wins match your search."
+                : "No wins yet. Your next entry could be the one!"}
+            </Text>
+          )
         }
-        renderItem={({ item }) => <EntryRow entry={item} />}
+        renderItem={({ item }) => (
+          <EntryRow
+            entry={item}
+            onViewDetails={() => {
+              setClaimWin(item);
+              setClaimOpen(true);
+            }}
+          />
+        )}
+      />
+
+      <WinClaimSheet
+        visible={claimOpen}
+        onClose={() => setClaimOpen(false)}
+        win={claimWin}
       />
 
       <FiltersSheet
@@ -115,6 +185,17 @@ const styles = StyleSheet.create({
   },
   controlsGap: {
     paddingBottom: Spacing.three,
+  },
+  loading: {
+    marginTop: Spacing.six,
+  },
+  errorBox: {
+    alignItems: "center",
+    gap: Spacing.three,
+  },
+  retryText: {
+    fontSize: 14,
+    fontWeight: "600",
   },
   empty: {
     marginTop: Spacing.five,
