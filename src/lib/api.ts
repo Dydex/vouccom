@@ -419,8 +419,15 @@ export type ListingsPage = {
 };
 
 /** Live listings, soonest draw first. */
-export function getListings(page = 1, limit = 24) {
-  return request<ListingsPage>(`/listings?page=${page}&limit=${limit}`);
+/** Live listings by default; "closed" for draws that have happened. */
+export function getListings(
+  page = 1,
+  limit = 24,
+  status: "live" | "closed" = "live",
+) {
+  return request<ListingsPage>(
+    `/listings?page=${page}&limit=${limit}&status=${status}`,
+  );
 }
 
 /** 404 for draft, cancelled or not-yet-open listings. */

@@ -18,33 +18,6 @@ export type Draw = {
   enteredDaysAgo: number;
 };
 
-// TODO: replace with the user's draws from the backend.
-export const DRAWS: Draw[] = [
-  {
-    id: "d1",
-    title: "UK Used 2026 Toyota Tundra",
-    live: true,
-    category: "cars",
-    brand: "Toyota",
-    voucherPrice: 500,
-    assetValue: 1_200_000,
-    drawDate: "14 Sep",
-    daysLeft: 0,
-    enteredDaysAgo: 0,
-  },
-  {
-    id: "d2",
-    title: "UK Used 2026 Toyota Tundra",
-    category: "cars",
-    brand: "Toyota",
-    voucherPrice: 500,
-    assetValue: 1_200_000,
-    drawDate: "14 Sep",
-    daysLeft: 3,
-    enteredDaysAgo: 0,
-  },
-];
-
 export type Activity = {
   id: string;
   kind: "purchase" | "saved" | "joined";
@@ -87,61 +60,3 @@ export type DrawListItem = {
   voucherPrice: number;
   assetValue: number;
 };
-
-// TODO: replace with the draws from the backend.
-export const ALL_DRAWS: DrawListItem[] = [
-  {
-    id: "ad1",
-    title: "UK Used 2026 Honda Civic",
-    extraAssets: 2,
-    status: "live",
-    assets: 3,
-    assetList: [
-      { title: "UK Used 2026 Honda Civic", listingId: "b3" },
-      { title: "New 2026 Ford Bronco", listingId: "b2" },
-      { title: "New 2025 Toyota Camry" },
-    ],
-    drawDate: "24 Sep, 8PM",
-    link: "https://www.youtube.com",
-    date: "24 Sep.",
-    timeLabel: "12 hours left",
-    daysAgo: 0,
-    category: "cars",
-    brand: "Honda",
-    voucherPrice: 500,
-    assetValue: 900_000,
-  },
-  {
-    id: "ad2",
-    title: "UK Used 2026 Honda Civic",
-    status: "upcoming",
-    assets: 1,
-    assetList: [{ title: "UK Used 2026 Honda Civic", listingId: "b3" }],
-    drawDate: "24 Sep, 8PM",
-    link: "https://www.youtube.com",
-    date: "24 Sep.",
-    timeLabel: "12 hours left",
-    daysAgo: 0,
-    category: "cars",
-    brand: "Honda",
-    voucherPrice: 500,
-    assetValue: 900_000,
-  },
-  {
-    id: "ad3",
-    title: "UK Used 2026 Honda Civic",
-    status: "completed",
-    assets: 1,
-    assetList: [{ title: "UK Used 2026 Honda Civic", listingId: "b3" }],
-    drawDate: "24 Sep, 8PM",
-    winningEntry: "#10393",
-    link: "https://www.youtube.com",
-    date: "24 Sep.",
-    timeLabel: "2 days ago",
-    daysAgo: 0,
-    category: "cars",
-    brand: "Honda",
-    voucherPrice: 500,
-    assetValue: 900_000,
-  },
-];

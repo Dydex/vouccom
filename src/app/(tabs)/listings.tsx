@@ -1,5 +1,6 @@
+import { useFocusEffect } from "expo-router";
 import { SymbolView } from "expo-symbols";
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -9,7 +10,7 @@ import {
   StyleSheet,
   View,
 } from "react-native";
-import { Text } from "@/components/text";
+import { Text, type TextInputHandle } from "@/components/text";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 import {
@@ -25,6 +26,7 @@ import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
 import { DEFAULT_FILTERS, matchesFilters, rangeFor } from "@/data/filters";
 import type { Listing } from "@/data/listings";
 import { useListings } from "@/hooks/use-listings";
+import { takeSearchFocusRequest } from "@/lib/search-focus";
 import { useTheme } from "@/hooks/use-theme";
 
 const SIDE = 20;
@@ -54,6 +56,19 @@ export default function ListingsScreen() {
   const [sort, setSort] = useState<Sort>("default");
   const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
+
+  // Home's search button: focus the search field when this tab comes into view.
+  const listRef = useRef<FlatList>(null);
+  const searchRef = useRef<TextInputHandle>(null);
+  useFocusEffect(
+    useCallback(() => {
+      if (!takeSearchFocusRequest()) return;
+      listRef.current?.scrollToOffset({ offset: 0, animated: false });
+      // After the tab switch has finished, or the keyboard may not open.
+      const timer = setTimeout(() => searchRef.current?.focus(), 300);
+      return () => clearTimeout(timer);
+    }, []),
+  );
 
   const toast = useToast();
   const {
@@ -116,6 +131,7 @@ export default function ListingsScreen() {
       />
 
       <FlatList
+        ref={listRef}
         data={listings}
         keyExtractor={(item, index) => item?.id ?? `spacer-${index}`}
         numColumns={2}
@@ -146,6 +162,7 @@ export default function ListingsScreen() {
         ListHeaderComponent={
           <View style={styles.controls}>
             <SearchField
+              inputRef={searchRef}
               placeholder="Search listings"
               value={query}
               onChangeText={setQuery}

@@ -1,3 +1,4 @@
+import type { ComponentRef, Ref } from "react";
 import {
   StyleSheet,
   Text as RNText,
@@ -54,7 +55,13 @@ export function Text({ style, ...rest }: TextProps) {
   return <RNText {...rest} style={withFont(style)} />;
 }
 
+/** What a ref to a TextInput holds, e.g. for `.focus()`. */
+export type TextInputHandle = ComponentRef<typeof RNTextInput>;
+
 /** Drop-in replacement for React Native's TextInput, set in Space Grotesk. */
-export function TextInput({ style, ...rest }: TextInputProps) {
+export function TextInput({
+  style,
+  ...rest
+}: TextInputProps & { ref?: Ref<TextInputHandle> }) {
   return <RNTextInput {...rest} style={withFont(style)} />;
 }

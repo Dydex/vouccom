@@ -1,7 +1,7 @@
 import { Image } from "expo-image";
-import type { ReactNode } from "react";
+import { useRef, type ReactNode, type Ref } from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import { TextInput } from "@/components/text";
+import { TextInput, type TextInputHandle } from "@/components/text";
 
 import {
   FilterDropdown,
@@ -31,15 +31,30 @@ export function SearchField({
   placeholder,
   value,
   onChangeText,
+  inputRef,
 }: {
   placeholder: string;
   value: string;
   onChangeText: (text: string) => void;
+  /** For focusing the field from code. */
+  inputRef?: Ref<TextInputHandle>;
 }) {
   const theme = useTheme();
+  const localRef = useRef<TextInputHandle | null>(null);
+
+  // Keep our own handle on the input and pass it on to the caller's ref.
+  const setRef = (node: TextInputHandle | null) => {
+    localRef.current = node;
+    if (typeof inputRef === "function") inputRef(node);
+    else if (inputRef) inputRef.current = node;
+  };
 
   return (
-    <View style={[styles.search, { backgroundColor: theme.card }]}>
+    <Pressable
+      accessible={false}
+      onPress={() => localRef.current?.focus()}
+      style={[styles.search, { backgroundColor: theme.card }]}
+    >
       <Image
         source={require("@/assets/images/common/Search.png")}
         style={styles.searchIcon}
@@ -47,6 +62,7 @@ export function SearchField({
         tintColor={theme.search}
       />
       <TextInput
+        ref={setRef}
         value={value}
         onChangeText={onChangeText}
         placeholder={placeholder}
@@ -55,7 +71,7 @@ export function SearchField({
         autoCorrect={false}
         style={[styles.searchInput, { color: theme.text }]}
       />
-    </View>
+    </Pressable>
   );
 }
 

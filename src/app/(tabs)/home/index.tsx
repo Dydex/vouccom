@@ -29,10 +29,10 @@ import { VerifyEmailBanner } from "@/components/verify-email-banner";
 import { WinClaimSheet } from "@/components/win-claim-sheet";
 import { formatNaira } from "@/constants/currency";
 import { FloatingTabBarHeight, Spacing } from "@/constants/theme";
-import { DRAWS } from "@/data/draws";
 import { USER } from "@/data/user";
 import type { Entry } from "@/data/entries";
 import type { Listing } from "@/data/listings";
+import { useMyDraws } from "@/hooks/use-draws";
 import { useEntries } from "@/hooks/use-entries";
 import { useListings } from "@/hooks/use-listings";
 import { useNotifications } from "@/hooks/use-notifications";
@@ -42,6 +42,7 @@ import { useWallet } from "@/hooks/use-wallet";
 import { useWinnings } from "@/hooks/use-winnings";
 import type { ApiPurchase } from "@/lib/api";
 import { toActivity } from "@/lib/purchases";
+import { requestSearchFocus } from "@/lib/search-focus";
 import type { Win } from "@/lib/winnings";
 import { useAuth } from "@/state/auth";
 
@@ -49,6 +50,7 @@ const SIDE = 20;
 
 const ACTIVE_SHOWN = 3;
 const ACTIVITY_SHOWN = 3;
+const DRAWS_SHOWN = 3;
 const BROWSE_COUNT = 8;
 
 export default function HomeScreen() {
@@ -90,6 +92,8 @@ export default function HomeScreen() {
   const [detailsOpen, setDetailsOpen] = useState(false);
   const balance = wallet.data && wallet.data.balanceKobo / 100;
   const entriesQuery = useEntries();
+  const myDraws = useMyDraws();
+  const upcomingDraws = (myDraws.data ?? []).slice(0, DRAWS_SHOWN);
   const activeEntries = useMemo(
     () =>
       (entriesQuery.data ?? [])
@@ -136,7 +140,11 @@ export default function HomeScreen() {
 
           <Pressable
             accessibilityRole="button"
-            accessibilityLabel="Search"
+            accessibilityLabel="Search listings"
+            onPress={() => {
+              requestSearchFocus();
+              router.navigate("/listings");
+            }}
             style={[styles.roundButton, { backgroundColor: theme.greyButton }]}
           >
             <Image
@@ -301,9 +309,36 @@ export default function HomeScreen() {
           onAction={() => router.push("/home/myDraws")}
         />
         <View style={styles.rowList}>
-          {DRAWS.map((draw) => (
-            <DrawRow key={draw.id} draw={draw} />
-          ))}
+          {myDraws.isPending ? (
+            <ActivityIndicator style={styles.rowLoading} color={theme.brand} />
+          ) : upcomingDraws.length === 0 ? (
+            <Text style={[styles.rowStateText, { color: theme.textSecondary }]}>
+              {myDraws.isError
+                ? "Couldn't load your draws."
+                : "You're not in any upcoming draws."}
+            </Text>
+          ) : (
+            upcomingDraws.map((draw) => (
+              <DrawRow
+                key={draw.id}
+                draw={draw}
+                onViewDetails={() => {
+                  const entry = entriesQuery.data?.find(
+                    (e) => e.id === draw.id,
+                  );
+                  if (!entry) return;
+                  setDetailsEntry(entry);
+                  setDetailsOpen(true);
+                }}
+                onWatch={() =>
+                  router.push({
+                    pathname: "/listing/[id]",
+                    params: { id: draw.id },
+                  })
+                }
+              />
+            ))
+          )}
         </View>
 
         {/* My wins */}

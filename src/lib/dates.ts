@@ -60,3 +60,10 @@ export function parseDob(
     iso: `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
   };
 }
+
+/** Whole calendar days from `earlier` to `later` in the phone's time zone. */
+export function calendarDaysBetween(earlier: Date, later: Date) {
+  const start = new Date(earlier).setHours(0, 0, 0, 0);
+  const end = new Date(later).setHours(0, 0, 0, 0);
+  return Math.round((end - start) / 86_400_000);
+}
