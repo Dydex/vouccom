@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "vouccom",
+    "name": "Vouccom",
     "slug": "vouccom",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -8,7 +8,6 @@
     "scheme": "vouccom",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "icon": "./assets/expo.icon",
       "bundleIdentifier": "com.vouccom.app",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
@@ -17,9 +16,8 @@
     "android": {
       "package": "com.vouccom.app",
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE",
+        "backgroundColor": "#2855FF",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
-        "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false
@@ -33,7 +31,7 @@
       [
         "expo-splash-screen",
         {
-          "backgroundColor": "#208AEF",
+          "backgroundColor": "#2855FF",
           "image": "./assets/images/splash-icon.png",
           "imageWidth": 76
         }
@@ -54,7 +52,9 @@
           "color": "#2855FF",
           "defaultChannel": "default"
         }
-      ]
+      ],
+      "expo-status-bar",
+      "expo-web-browser"
     ],
     "experiments": {
       "typedRoutes": true,

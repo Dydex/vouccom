@@ -66,7 +66,7 @@ export function AnimatedIcon() {
       </Animated.View>
 
       <Animated.View style={styles.imageContainer} entering={logoKeyframe.duration(DURATION)}>
-        <Image style={styles.image} source={require('@/assets/images/expo-logo.png')} />
+        <Image style={styles.image} source={require('@/assets/images/splash-icon.png')} />
       </Animated.View>
     </View>
   );
@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   image: {
     position: 'absolute',
     width: 76,
-    height: 71,
+    height: 68, // splash-icon.png is a 3x export (228x205)
   },
   background: {
     width: 128,
