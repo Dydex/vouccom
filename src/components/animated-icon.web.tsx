@@ -98,7 +98,7 @@ const styles = StyleSheet.create({
   image: {
     position: 'absolute',
     width: 76,
-    height: 68, // splash-icon.png is a 3x export (228x205)
+    height: 47, // splash-icon.png is a 3x export (228x141)
   },
   background: {
     width: 128,

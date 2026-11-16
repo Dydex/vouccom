@@ -129,7 +129,7 @@ const styles = StyleSheet.create({
   },
   image: {
     width: 76,
-    height: 68, // splash-icon.png is a 3x export (228x205)
+    height: 47, // splash-icon.png is a 3x export (228x141)
   },
   background: {
     borderRadius: 40,
@@ -141,7 +141,7 @@ const styles = StyleSheet.create({
   splashOverlay: {
     ...StyleSheet.absoluteFill,
     // Matches the native splash in app.json, so the hand-over doesn't flash.
-    backgroundColor: '#2855FF',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1000,
