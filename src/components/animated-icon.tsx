@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import * as SplashScreen from 'expo-splash-screen';
 import { useState } from 'react';
-import { Dimensions, StyleSheet, View } from 'react-native';
+import { Dimensions, StyleSheet, useColorScheme, View } from 'react-native';
 import Animated, { Easing, Keyframe } from 'react-native-reanimated';
 import { scheduleOnRN } from 'react-native-worklets';
 
@@ -11,6 +11,10 @@ const DURATION = 600;
 export function AnimatedSplashOverlay() {
   const [animate, setAnimate] = useState(false);
   const [visible, setVisible] = useState(true);
+  // The same colours as the native splash in app.json, light and dark.
+  const background = {
+    backgroundColor: useColorScheme() === 'dark' ? '#1E1E1E' : '#FFFFFF',
+  };
 
   if (!visible) return null;
 
@@ -43,7 +47,7 @@ export function AnimatedSplashOverlay() {
           scheduleOnRN(setVisible, false);
         }
       })}
-      style={styles.splashOverlay}>
+      style={[styles.splashOverlay, background]}>
       {image}
     </Animated.View>
   ) : (
@@ -53,7 +57,7 @@ export function AnimatedSplashOverlay() {
           setAnimate(true);
         });
       }}
-      style={styles.splashOverlay}>
+      style={[styles.splashOverlay, background]}>
       {image}
     </View>
   );
@@ -140,8 +144,6 @@ const styles = StyleSheet.create({
   },
   splashOverlay: {
     ...StyleSheet.absoluteFill,
-    // Matches the native splash in app.json, so the hand-over doesn't flash.
-    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1000,
