@@ -3,10 +3,11 @@ import { router, useLocalSearchParams } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import * as WebBrowser from "expo-web-browser";
 import { SymbolView, type SymbolViewProps } from "expo-symbols";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
+  Platform,
   Pressable,
   ScrollView,
   Share,
@@ -23,6 +24,7 @@ import { CommentsSheet } from "@/components/comments-sheet";
 import { DescriptionSheet } from "@/components/description-sheet";
 import { DrawDetailsSheet } from "@/components/draw-details-sheet";
 import { QuantityBar } from "@/components/quantity-bar";
+import { TopUpSheet } from "@/components/top-up-sheet";
 import { formatNaira } from "@/constants/currency";
 import { Spacing } from "@/constants/theme";
 import {
@@ -166,6 +168,19 @@ function ListingDetails({ listing }: { listing: Listing }) {
   const closeSheet = () => {
     setSheet(null);
     setPayError(undefined);
+  };
+
+  const [topUpOpen, setTopUpOpen] = useState(false);
+  // iOS can't open a sheet while another is still closing, so wait for Checkout.
+  const afterCheckoutCloses = useRef<(() => void) | null>(null);
+
+  const openTopUp = () => {
+    closeSheet();
+    if (Platform.OS === "ios") {
+      afterCheckoutCloses.current = () => setTopUpOpen(true);
+    } else {
+      setTopUpOpen(true);
+    }
   };
 
   const showError = (error: Error) =>
@@ -634,6 +649,11 @@ function ListingDetails({ listing }: { listing: Listing }) {
         onProceed={pay}
         processing={paying}
         error={payError}
+        onTopUp={openTopUp}
+        onDismiss={() => {
+          afterCheckoutCloses.current?.();
+          afterCheckoutCloses.current = null;
+        }}
         itemName={`${rest.length ? rest.join(" ") : title} voucher`}
         unitPrice={listing.voucherPrice}
         quantity={quantity}
@@ -647,6 +667,8 @@ function ListingDetails({ listing }: { listing: Listing }) {
           setQuantity(1);
         }}
       />
+
+      <TopUpSheet visible={topUpOpen} onClose={() => setTopUpOpen(false)} />
     </View>
   );
 }

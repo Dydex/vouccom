@@ -48,6 +48,10 @@ type CheckoutSheetProps = {
   processing?: boolean;
   /** Why the last payment failed. */
   error?: string;
+  /** Shown as a "Top up wallet" button when the wallet balance is too low. */
+  onTopUp?: () => void;
+  /** iOS only: called once the sheet has finished closing. */
+  onDismiss?: () => void;
 };
 
 export function CheckoutSheet({
@@ -62,6 +66,8 @@ export function CheckoutSheet({
   onProceed,
   processing,
   error,
+  onTopUp,
+  onDismiss,
 }: CheckoutSheetProps) {
   const theme = useTheme();
   const balance = useWalletBalance();
@@ -87,6 +93,7 @@ export function CheckoutSheet({
     <BottomSheet
       visible={visible}
       onClose={onClose}
+      onDismiss={onDismiss}
       title="Checkout"
       tall
       footer={
@@ -332,9 +339,26 @@ export function CheckoutSheet({
         </Text>
 
         {insufficient ? (
-          <Text style={[styles.warning, { color: theme.coral }]}>
-            Your wallet balance is too low for this order.
-          </Text>
+          <View style={styles.lowBalance}>
+            <Text style={[styles.warning, { color: theme.coral }]}>
+              Your wallet balance is too low for this order.
+            </Text>
+            {onTopUp && (
+              <Pressable
+                accessibilityRole="button"
+                onPress={onTopUp}
+                style={({ pressed }) => [
+                  styles.topUp,
+                  { backgroundColor: theme.greyButton },
+                  pressed && styles.pressed,
+                ]}
+              >
+                <Text style={[styles.topUpText, { color: theme.text }]}>
+                  Top up wallet
+                </Text>
+              </Pressable>
+            )}
+          </View>
         ) : error ? (
           <Text style={[styles.warning, { color: theme.coral }]}>{error}</Text>
         ) : null}
@@ -506,6 +530,20 @@ const styles = StyleSheet.create({
   warning: {
     fontSize: 12,
     textAlign: "center",
+  },
+  lowBalance: {
+    alignItems: "center",
+    gap: Spacing.two,
+  },
+  topUp: {
+    height: 36,
+    paddingHorizontal: Spacing.three,
+    borderRadius: 18,
+    justifyContent: "center",
+  },
+  topUpText: {
+    fontSize: 13,
+    fontWeight: "500",
   },
   proceed: {
     height: 52,
