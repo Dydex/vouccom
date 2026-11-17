@@ -56,7 +56,10 @@ export function CommentsSheet({
           value={draft}
           onChangeText={setDraft}
           multiline
+          // The API's limit for a comment.
+          maxLength={1000}
           textAlignVertical="top"
+          placeholder="Write a comment..."
           accessibilityLabel="Add a comment"
           placeholderTextColor={theme.placeholder}
           style={[
@@ -193,7 +196,9 @@ const styles = StyleSheet.create({
   },
   input: {
     alignSelf: "stretch",
-    minHeight: 220,
+    // Starts at about two lines and grows with the text, then scrolls inside.
+    minHeight: 72,
+    maxHeight: 220,
     borderRadius: 24,
     padding: Spacing.three,
     fontSize: 14,
