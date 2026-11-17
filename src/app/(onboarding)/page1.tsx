@@ -13,7 +13,7 @@ export default function OnboardingPageOne() {
   const theme = useTheme();
 
   useEffect(() => {
-    const timer = setTimeout(() => router.replace("/page2"), 3000);
+    const timer = setTimeout(() => router.replace("/intro"), 3000);
     return () => clearTimeout(timer);
   }, [router]);
 
@@ -64,5 +64,5 @@ const styles = StyleSheet.create({
     fontSize: 40,
     fontWeight: "700",
     letterSpacing: 0.5,
-  }
+  },
 });

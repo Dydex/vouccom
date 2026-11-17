@@ -61,7 +61,9 @@ export default function Login() {
         <Pressable
           accessibilityRole="button"
           accessibilityLabel="Go back"
-          onPress={() => router.push("/page4")}
+          onPress={() =>
+            router.push({ pathname: "/intro", params: { start: "last" } })
+          }
           style={[styles.backButton, { backgroundColor: theme.greyButton }]}
         >
           <Image
