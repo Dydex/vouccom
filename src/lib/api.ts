@@ -1,5 +1,7 @@
 // Vouccom API client. Docs: https://vouccom.com/api/docs
 
+import { File } from "expo-file-system";
+
 export const API_URL = process.env.EXPO_PUBLIC_API_URL;
 
 const TIMEOUT_MS = 20_000;
@@ -82,7 +84,10 @@ export async function request<T>(
         body === undefined ? undefined : isForm ? body : JSON.stringify(body),
       signal: controller.signal,
     });
-  } catch {
+  } catch (cause) {
+    // The user sees a friendly message; the real reason goes to the dev console.
+    if (__DEV__)
+      console.warn(`${method} ${path} failed before a response:`, cause);
     throw new ApiError(
       controller.signal.aborted
         ? "The server took too long to answer. Please try again."
@@ -240,15 +245,9 @@ export const MAX_AVATAR_BYTES = 5 * 1024 * 1024;
 
 /** JPG, PNG or WebP, up to 5 MB. Returns the updated user. */
 export function uploadAvatar(file: LocalFile) {
-  const form = new FormData();
-  form.append("file", {
-    uri: file.uri,
-    name: file.name,
-    type: file.mimeType ?? "image/jpeg",
-  } as unknown as Blob);
   return request<{ user: User }>("/auth/me/avatar", {
     method: "POST",
-    body: form,
+    body: formWithFile(file),
     timeoutMs: 60_000,
   });
 }
@@ -681,18 +680,22 @@ export const MAX_CLAIM_DOCUMENT_BYTES = 2 * 1024 * 1024;
 /** A file picked on the phone. */
 export type LocalFile = { uri: string; name: string; mimeType?: string };
 
+/**
+ * A multipart body with the file under "file". Expo's fetch (the default in
+ * SDK 58) needs a `File`, not React Native's `{ uri, name, type }` object;
+ * the File carries its own name and type from the file on disk.
+ */
+function formWithFile(file: LocalFile) {
+  const form = new FormData();
+  form.append("file", new File(file.uri));
+  return form;
+}
+
 /** Stores a government ID or proof of address privately. Returns its private url. */
 export function uploadClaimDocument(file: LocalFile) {
-  const form = new FormData();
-  // React Native uploads a local file from this { uri, name, type } shape.
-  form.append("file", {
-    uri: file.uri,
-    name: file.name,
-    type: file.mimeType ?? "application/octet-stream",
-  } as unknown as Blob);
   return request<{ url: string; resourceType: string }>(
     "/uploads/claim-document",
-    { method: "POST", body: form, timeoutMs: 60_000 },
+    { method: "POST", body: formWithFile(file), timeoutMs: 60_000 },
   );
 }
 
