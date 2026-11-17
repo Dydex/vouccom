@@ -142,6 +142,7 @@ export function toListing(api: ApiListing, now = Date.now()): Listing {
     // TODO: a placeholder image when a listing has none.
     image: api.images[0] ?? "",
     images: api.images.length > 0 ? api.images : undefined,
+    documents: api.documents ?? [],
     description: api.description || undefined,
     info: infoFor(api),
   };

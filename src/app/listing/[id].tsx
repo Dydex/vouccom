@@ -606,6 +606,9 @@ function ListingDetails({ listing }: { listing: Listing }) {
         onQuantityChange={setQuantity}
         unitPrice={listing.voucherPrice}
         onAdd={() => setSheet("checkout")}
+        documents={listing.documents}
+        imageCount={images.length}
+        onViewGallery={() => setSheet(null)}
       />
 
       <CommentsSheet

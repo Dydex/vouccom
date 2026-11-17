@@ -368,6 +368,7 @@ export type ApiListing = {
   id: string;
   title: string;
   condition: "brand_new" | "foreign_used" | "nigerian_used";
+  vin?: string;
   year: number;
   mileageKm: number | null;
   transmission: "automatic" | "manual" | null;
@@ -394,11 +395,16 @@ export type ApiListing = {
   /** Null means no cap. */
   totalVouchers: number | null;
   soldCount: number;
+  /** ISO date-time; when sales open. */
+  startsAt?: string | null;
   /** ISO date-time. */
   drawDate: string;
   status: "draft" | "live" | "closed" | "cancelled";
+  verificationStatus?: "unverified" | "in_review" | "verified";
   badges: ("verified" | "inspected" | "secure" | "popular")[];
   featured: boolean;
+  /** Reports and media about the asset, each a link to the file. */
+  documents?: ListingDocument[];
   whatsIncluded: string[];
   conditionExterior: string | null;
   conditionInterior: string | null;
@@ -406,9 +412,22 @@ export type ApiListing = {
   description: string;
   /** ISO date-time. */
   createdAt: string;
+  updatedAt?: string;
   /** Only on GET /listings/{id}, and only meaningful when signed in. */
   savedByMe?: boolean;
 };
+
+export type ListingDocumentType =
+  | "inspection_report"
+  | "service_history"
+  | "ownership_history"
+  | "accident_records"
+  | "import_documentation"
+  | "walkthrough_video"
+  | "engine_chassis_report"
+  | "authenticity_certificate";
+
+export type ListingDocument = { type: ListingDocumentType; url: string };
 
 export type ListingsPage = {
   listings: ApiListing[];

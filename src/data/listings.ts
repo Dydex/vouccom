@@ -1,4 +1,5 @@
 import type { CategoryId } from "@/data/filters";
+import type { ListingDocument } from "@/lib/api";
 
 export type ListingBadge = "new" | "ending";
 
@@ -31,6 +32,8 @@ export type Listing = {
   description?: string;
   /** Gallery images; defaults to just `image`. */
   images?: (number | string)[];
+  /** Reports and media for the Additional Information pop-up. */
+  documents?: ListingDocument[];
   /** The signed-in user's entries in this draw, if any. */
   userEntries?: { count: number; daysAgo: number };
   /** Text for the Description pop-up; defaults to a generic version. */
