@@ -2,7 +2,6 @@ import { StyleSheet, View } from "react-native";
 import { Text } from "@/components/text";
 
 import { BottomSheet } from "@/components/bottom-sheet";
-import { QuantityBar } from "@/components/quantity-bar";
 import { Spacing } from "@/constants/theme";
 import type { ListingInfo } from "@/data/listings";
 import { useTheme } from "@/hooks/use-theme";
@@ -11,11 +10,6 @@ type DescriptionSheetProps = {
   visible: boolean;
   onClose: () => void;
   info: ListingInfo;
-  quantity: number;
-  maxQuantity: number;
-  onQuantityChange: (quantity: number) => void;
-  unitPrice: number;
-  onAdd: () => void;
 };
 
 /** "Description" pop-up: asset overview, what's included and condition summary. */
@@ -23,30 +17,11 @@ export function DescriptionSheet({
   visible,
   onClose,
   info,
-  quantity,
-  maxQuantity,
-  onQuantityChange,
-  unitPrice,
-  onAdd,
 }: DescriptionSheetProps) {
   const theme = useTheme();
 
   return (
-    <BottomSheet
-      visible={visible}
-      onClose={onClose}
-      title="Description"
-      tall
-      footer={
-        <QuantityBar
-          quantity={quantity}
-          maxQuantity={maxQuantity}
-          onQuantityChange={onQuantityChange}
-          unitPrice={unitPrice}
-          onAdd={onAdd}
-        />
-      }
-    >
+    <BottomSheet visible={visible} onClose={onClose} title="Description" tall>
       <View style={styles.section}>
         <Text style={[styles.heading, { color: theme.text }]}>
           Asset Overview

@@ -4,7 +4,6 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { Text } from "@/components/text";
 
 import { BottomSheet } from "@/components/bottom-sheet";
-import { QuantityBar } from "@/components/quantity-bar";
 import { Spacing } from "@/constants/theme";
 import { useTheme } from "@/hooks/use-theme";
 import type { ListingDocument, ListingDocumentType } from "@/lib/api";
@@ -49,11 +48,6 @@ const ICONS: Record<Kind, SymbolViewProps["name"]> = {
 type AdditionalInfoSheetProps = {
   visible: boolean;
   onClose: () => void;
-  quantity: number;
-  maxQuantity: number;
-  onQuantityChange: (quantity: number) => void;
-  unitPrice: number;
-  onAdd: () => void;
   /** The listing's documents; tiles without one show as not available. */
   documents?: ListingDocument[];
   /** How many photos the listing has, for the gallery tile. */
@@ -66,11 +60,6 @@ type AdditionalInfoSheetProps = {
 export function AdditionalInfoSheet({
   visible,
   onClose,
-  quantity,
-  maxQuantity,
-  onQuantityChange,
-  unitPrice,
-  onAdd,
   documents = [],
   imageCount,
   onViewGallery,
@@ -105,16 +94,6 @@ export function AdditionalInfoSheet({
       visible={visible}
       onClose={onClose}
       title="Additional Information"
-      // Fits the tiles: grows with how many the listing has, then scrolls.
-      footer={
-        <QuantityBar
-          quantity={quantity}
-          maxQuantity={maxQuantity}
-          onQuantityChange={onQuantityChange}
-          unitPrice={unitPrice}
-          onAdd={onAdd}
-        />
-      }
     >
       {available.length === 0 ? (
         <Text style={[styles.empty, { color: theme.textSecondary }]}>

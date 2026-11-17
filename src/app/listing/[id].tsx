@@ -591,21 +591,11 @@ function ListingDetails({ listing }: { listing: Listing }) {
         visible={sheet === "description"}
         onClose={() => setSheet(null)}
         info={listingInfo(listing)}
-        quantity={quantity}
-        maxQuantity={MAX_QUANTITY}
-        onQuantityChange={setQuantity}
-        unitPrice={listing.voucherPrice}
-        onAdd={() => setSheet("checkout")}
       />
 
       <AdditionalInfoSheet
         visible={sheet === "info"}
         onClose={() => setSheet(null)}
-        quantity={quantity}
-        maxQuantity={MAX_QUANTITY}
-        onQuantityChange={setQuantity}
-        unitPrice={listing.voucherPrice}
-        onAdd={() => setSheet("checkout")}
         documents={listing.documents}
         imageCount={images.length}
         onViewGallery={() => setSheet(null)}
@@ -615,11 +605,6 @@ function ListingDetails({ listing }: { listing: Listing }) {
         listingId={listing.id}
         visible={sheet === "comments"}
         onClose={() => setSheet(null)}
-        quantity={quantity}
-        maxQuantity={MAX_QUANTITY}
-        onQuantityChange={setQuantity}
-        unitPrice={listing.voucherPrice}
-        onAdd={() => setSheet("checkout")}
       />
 
       <DrawDetailsSheet

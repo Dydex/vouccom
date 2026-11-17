@@ -4,7 +4,6 @@ import { ActivityIndicator, Pressable, StyleSheet, View } from "react-native";
 import { Text, TextInput } from "@/components/text";
 
 import { BottomSheet } from "@/components/bottom-sheet";
-import { QuantityBar } from "@/components/quantity-bar";
 import { Spacing } from "@/constants/theme";
 import { useComments, usePostComment } from "@/hooks/use-comments";
 import { useTheme } from "@/hooks/use-theme";
@@ -18,11 +17,6 @@ type CommentsSheetProps = {
   listingId: string;
   visible: boolean;
   onClose: () => void;
-  quantity: number;
-  maxQuantity: number;
-  onQuantityChange: (quantity: number) => void;
-  unitPrice: number;
-  onAdd: () => void;
 };
 
 /** "Comments" pop-up: write a comment and read the latest ones. */
@@ -30,11 +24,6 @@ export function CommentsSheet({
   listingId,
   visible,
   onClose,
-  quantity,
-  maxQuantity,
-  onQuantityChange,
-  unitPrice,
-  onAdd,
 }: CommentsSheetProps) {
   const theme = useTheme();
 
@@ -59,21 +48,8 @@ export function CommentsSheet({
   };
 
   return (
-    <BottomSheet
-      visible={visible}
-      onClose={onClose}
-      title="Comments"
-      tall
-      footer={
-        <QuantityBar
-          quantity={quantity}
-          maxQuantity={maxQuantity}
-          onQuantityChange={onQuantityChange}
-          unitPrice={unitPrice}
-          onAdd={onAdd}
-        />
-      }
-    >
+    // No fixed height: grows as comments load, up to the sheet's limit, then scrolls.
+    <BottomSheet visible={visible} onClose={onClose} title="Comments">
       <View style={styles.compose}>
         <Text style={[styles.label, { color: theme.text }]}>Add a comment</Text>
         <TextInput
